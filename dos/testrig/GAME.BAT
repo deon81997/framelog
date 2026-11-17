@@ -1,5 +1,5 @@
 @ECHO OFF
-REM GAME.BAT duke|heretic|rott|flip|flipv [nofl|fl] [FRAMELOG option, e.g. /3DA] - SC55 (SBEMU + SC-55), FRAMELOG on COM1 (unless nofl), then the game in its
+REM GAME.BAT duke|heretic|rott|flip|flipv|flipb|flipmix [nofl|fl] [FRAMELOG option, e.g. /3DA] - SC55 (SBEMU + SC-55), FRAMELOG on COM1 (unless nofl), then the game in its
 REM attract mode (title demos loop; the rig kills the VM). Games in C:\G\<name>.
 C:
 CD \NUKEDSB
@@ -13,8 +13,13 @@ IF "%1"=="heretic" HERETIC.EXE
 IF "%1"=="rott" ROTT.EXE
 IF "%1"=="flip" C:\FLIP.EXE 40 70 10 M
 IF "%1"=="flipv" C:\FLIP.EXE 40 35 10 MV
+IF "%1"=="flipb" C:\FLIP.EXE 40 70 10 MB
+IF "%1"=="flipmix" C:\FLIP.EXE 15 70 10 MB
+IF "%1"=="flipmix" C:\FLIP.EXE 15 70 10 M
 IF "%1"=="flipw" C:\FLIP.EXE 40 35 10 V
 IF "%1"=="flipw" C:\FRAMELOG.EXE /STATUS > C:\FLST.TXT
 IF "%1"=="flipv" C:\FRAMELOG.EXE /STATUS > C:\FLST.TXT
 IF "%1"=="flip" C:\FRAMELOG.EXE /STATUS > C:\FLST.TXT
+IF "%1"=="flipb" C:\FRAMELOG.EXE /STATUS > C:\FLST.TXT
+IF "%1"=="flipmix" C:\FRAMELOG.EXE /STATUS > C:\FLST.TXT
 ECHO DONE FAIL game exited >> C:\RESULT.LOG

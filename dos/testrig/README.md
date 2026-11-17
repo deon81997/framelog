@@ -9,8 +9,9 @@ serial-bench (SB=). One VM rig at a time (shared /tmp/testrig-run-latest, 2-core
 | feas.sh ZIP A B C | QEMU | 1a: FLTSR + FLTEST (trap selectors, word OUT, SB DSP still answers) |
 | feas86.sh ZIP N B C | 86Box PII-450 | 1a: SBDIAG with/without FLTSR while the SC-55 plays |
 | e2e.sh ZIP plain/sbemu FPS [B] | QEMU | FRAMELOG + FLIP, COM1 -> TCP -> fllog.py, frame pattern check (B = FLIP flips with VESA INT 10h 4F07h) |
+| meta/metatest.sh | host gcc (UBSan+ASan) | flmeta.h: M records byte-equal to serial-bench flproto.encode_meta + decoded by MetaText; gpu/driver/cpu/res/mode text for D810/NVIDIA/PII/Mode X 240/360/text/VGA 12h cases (seconds) |
 | perf86.sh ZIP none idle log log3da | 86Box PII-450 | 1d: SC55LOG speed, SBDIAG, FLIP spare-CPU loops (FAST=fast skips SC55LOG) |
-| game86.sh ZIP duke/heretic/rott/flip/flipv/flipw [SECS] | 86Box PII-450 | real game attract demo, COM1 -> socat pty -> fllog.py, CSV + graph + screenshot (DUKEMODE=0/1/2 + DUKEW/DUKEH, e.g. 1 640 480 = VESA via the VBE 2.0 PM interface, FLOPT=/3DA[:ms], ROTTMUS/ROTTBITS); flipv = FLIP 35 fps vsync+MIDI, flipw = vsync only |
+| game86.sh ZIP duke/heretic/rott/flip/flipv/flipw [SECS] | 86Box PII-450 | real game attract demo, COM1 -> socat pty -> fllog.py, CSV + graph + screenshot (DUKEMODE=0/1/2 + DUKEW/DUKEH, e.g. 1 640 480 = VESA via the VBE 2.0 PM interface, FLOPT=/3DA[:ms], ROTTMUS/ROTTBITS); flipv = FLIP 35 fps vsync+MIDI, flipw = vsync only, flipb = FLIP B (VESA 101h 4F07h), flipmix = FLIP B 15 s then text-mode FLIP 15 s in one log (M change line) |
 
 Games for game86.sh (G=/tmp/g): from priavte store-personal `nuked-sbemu-muxed/testgames/`:
 `unzip 3dduke13.zip; unzip DN3DSW13.SHR -d /tmp/g/duke`, `cat HTIC_V12.1 HTIC_V12.2 > h.zip; unzip h.zip -d /tmp/g/heretic`.

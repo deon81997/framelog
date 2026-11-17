@@ -26,8 +26,32 @@ Readers resync by scanning for `A5h` and dropping candidates whose checksum fail
 | `G` | frame u16, delta u64 | 10 | same as `F` when the delta does not fit 32 bits |
 | `D` | count u32 | 4 | frames lost (ring overflow) since the last record; their time is inside the next delta |
 | `E` | frames u32, lost u32 | 8 | end: totals since `B` |
+| `M` | seq u8, text 15 bytes | 16 | metadata text chunk (see below) |
 
 `modes` bits: 0 CRTC start-address trap, 1 3DAh vsync poll, 2 VESA 4F07h, 3 real-mode (/RM), 4 Win98 swap hook.
+
+## `M` metadata (run info)
+
+Optional; old hosts skip it (unknown type = junk, the checksum still frames it). Sent after `H`, before `B`, and again
+(a new block, seq 0) when the game PC's mode changes while logging, before the next frame record.
+
+- Text = `key=value\n` lines, ASCII, split into 15-byte chunks with seq 0, 1, 2 ... (wraps at 255). The last chunk is
+  NUL-padded; a text that ends exactly on a chunk edge gets one more, all-NUL chunk.
+- seq 0 starts a new block; a gap in seq drops the block. Keys are lower-cased; lines without `=` are ignored.
+- Keys: `gpu`, `driver`, `res` (`640x480`), `depth` (bits), `cpu`, `game`, `mode`, plus any others (kept as CSV comments).
+- DOS TSR (FRAMELOG, `/NOMETA` = none): `gpu` = VBE 4F00h OEM string (+ vendor / product names on VBE 2.0+), else
+  `VGA`; `driver` = `VBE x.y, OEM rev a.bb[, product rev]`; `res`/`depth`/`mode` = the current mode (VESA: the BIOS mode
+  list + 4F01h read at load, tracked through INT 10h 4F02h; VGA: 40:49h, mode 13h geometry from CRTC 01h/07h/09h/12h,
+  `mode=X` when chain-4 is off; text modes send `mode=text 03h` and no `res`); `cpu` = CPUID brand string, else
+  `<vendor> family F model M stepping S`, then `, N MHz` (the TSC rate of `H`). A mode set (INT 10h AH=00h / 4F02h) while
+  logging = a fresh block before the next frame.
+- Win98 DLL (planned): DirectDraw GetDeviceIdentifier (description, driver version), the display mode at Flip/Present,
+  the exe name for `game`.
+- Cost: 19 bytes on the wire per chunk, once per start or mode set; nothing per frame.
+
+Host rule (serial-bench fllog.py): what the user gives (options, `--meta`, suite INI) wins; game-PC values fill empty
+keys; where both differ the game PC's value is kept as `pc_<key>`. A block after the first frame becomes one
+`# change@N=key=value ...` CSV line (`key=` = gone) before frame N.
 
 ## What a frame is (DOS)
 

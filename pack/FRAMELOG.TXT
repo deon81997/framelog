@@ -26,9 +26,11 @@ OPTIONS
                             to the screen (see WHICH GAMES; costs CPU)
   FRAMELOG /NOVESA          do not watch VESA page flips (INT 10h is
                             then left alone; see VESA below)
+  FRAMELOG /NOMETA          send no run info (see RUN INFO below)
   FRAMELOG /STATUS          counters of the loaded copy (flips, frames,
                             lost, bytes sent, host bytes, starts, traps,
-                            VESA display-start calls)
+                            VESA display-start calls, run info blocks
+                            sent, mode sets seen)
 
 CABLE
   Use a NULL-MODEM serial cable (crossed TX/RX) between the game PC's COM
@@ -52,9 +54,31 @@ VESA (SVGA) GAMES
     hands the game a copy of the card's table whose SetDisplayStart entry
     first notes the time, then runs the card's own code. Duke Nukem 3D's
     VESA modes flip this way.
-  FRAMELOG needs about 1.1 KB of DOS memory for this (16 bytes with
+  FRAMELOG needs about 1.2 KB of DOS memory for this (16 bytes with
   /NOVESA). Use /NOVESA if a VESA game or VESA driver (UNIVBE, SOLVBE)
   misbehaves with FRAMELOG loaded, and report it.
+
+RUN INFO (METADATA)
+  On by default. When logging starts, FRAMELOG sends the host a short
+  text block (an 'M' record) right after the header, and fllog.py writes
+  it into the CSV as  # gpu=...  lines, filling what you did not type:
+  - gpu    the VESA BIOS name of the card (OEM string, plus vendor and
+           product names on VBE 2.0+ cards); "VGA" without a VESA BIOS
+  - driver VBE version and the card's OEM software revision
+  - res, depth  the screen mode when logging starts (VESA modes from the
+           card's mode list; VGA modes from the BIOS; mode 13h and Mode X
+           read from the VGA registers, e.g. 320x240); mode = VESA 101h,
+           13h, X (unchained 256 colours), text 03h ...
+  - cpu    the CPU's name (CPUID brand string) or vendor + family /
+           model / stepping, plus the MHz FRAMELOG measured
+  If the game sets a new mode while logging (INT 10h AH=00h or VESA
+  4F02h), a fresh block goes out before the next frame, and the CSV gets
+  a  # change@N=res=640x480 ...  line before frame N.
+  The VESA and CPU questions are asked once, when FRAMELOG loads; nothing
+  is sent per frame. What you give fllog.py (--gpu, --res, a suite file)
+  wins; a different game-PC value is kept as pc_res etc. /NOVESA: the
+  mode is then read from the BIOS only (standard VGA modes). /NOMETA
+  sends nothing and does not watch mode sets.
 
 LIMITS
   - Protected-mode games only for now (DOS4GW, DJGPP, PMODE/W ...).
@@ -103,6 +127,10 @@ HARDWARE TEST CHECKLIST
   [ ] FLIP 20 70 10 B (VESA flips) logged: ~70 fps in the CSV?
   [ ] Doom: DOOM -timedemo demo3 WITHOUT FRAMELOG (note the realtics).
   [ ] Doom: same WITH FRAMELOG, logged to a CSV (realtics should match).
+  [ ] Run info: does the CSV's top (# gpu= / driver= / res= / depth= /
+      cpu=) match the real card, CPU and the game's mode? Duke
+      ScreenMode 0 = 320x200 X, ScreenMode 1 = 640x480 VESA. Send the
+      lines FRAMELOG prints when it loads (gpu=, driver=, cpu=).
   [ ] FRAMELOG /STATUS again after the runs: send the output.
   [ ] SBDIAG reports with and without FRAMELOG.
   [ ] Send back: all CSV files (name them game-machine.csv), the

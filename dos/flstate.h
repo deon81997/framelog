@@ -16,5 +16,6 @@ typedef struct {
     uint32_t rm_res[2];                         /* reserved (/RM, wip/rm-2026-11-17) */
     uint32_t vesa; volatile uint32_t vesa_calls;   /* /NOVESA clears vesa; display-start calls (INT 10h 4F07h + VBE PM thunk) */
     volatile uint32_t vbepm, vbepm_skip;            /* INT 10h 4F0Ah (PM interface) requests, tables not patched */
+    uint32_t meta; volatile uint32_t metas, modesets;   /* /NOMETA clears meta; M blocks sent; INT 10h mode sets seen */
 } FLSTATE;
 #endif
