@@ -1,6 +1,35 @@
 # HANDOFF — FRAMELOG
 
-## RESUME HERE (2026-11-17, late) - /3DA mode + ROTT done, waiting for hardware results (test2 zip)
+## RESUME HERE (2026-11-17 handoff to a new chat) - milestone 2: VESA hook, then /RM
+
+State: main f7997d4+ (this commit). Milestone 1 done; milestone 2: /3DA done (see next section). No hardware results
+yet - continue without them. Restore: DJGPP (/tmp/dl/djgpp, curl URL below), priavte store-dos71 + store-86rig +
+store-personal-1.0.0-beta.130-usb (ROM zip) + store-personal (testgames: unpack per dos/testrig/README.md),
+NUKED-SBEMU-MUXED read-only clone (MUXED=), serial-bench (SB=). apt: qemu-system-x86 zstd mtools socat xvfb xdotool
+openbox imagemagick librtmidi6; pip: pyserial matplotlib. One VM rig at a time (2 cores).
+
+Next 3 steps:
+1. VESA 4F07h hook (default on, /NOVESA off; header modes bit 2). Design: a 28-byte real-mode stub in our DOS block
+   (seg+1:0) hooked on the RM INT 10h vector (PM games' INT 10h is reflected to RM by DOS4GW/HDPMI):
+     cmp ax,4F07h / jne chain / test bl,7Dh (00h,02h,80h,82h = set/schedule start) / jnz chain /
+     call far [cs:cb] / chain: jmp far [cs:old]     bytes: 3D 07 4F 75 0A F6 C3 7D 75 05 2E FF 1E 14 00 2E FF 2E 18 00, cb@20 old@24
+   cb = _go32_dpmi_allocate_real_mode_callback_retf -> PM handler: rdtsc + the same burst merge as CRTC (last_sa,
+   0.5 ms) + frame_event. Games using the VBE 2.0 PM interface (4F0Ah) on VGA-compatible cards write CRTC 0C/0D
+   themselves -> already caught by the CRTC trap. Test: game86.sh duke with DUKE3D.CFG ScreenMode = 1, 640x480
+   (VESA; 86Box vesawc cfg = Voodoo3 VBE); expect ~1 frame per 4F07h; check console speed (INT 10h stub cost) and
+   /STATUS vesa counter. Also e2e in QEMU (std VGA VBE) with a FLIP option that flips via INT 10h 4F07h.
+2. /RM: real-mode games (no HDPMI trap in V86). Copy SBEMU qemm.c (QEMM_Install_IOPortTrap via QPI: JEMM + QPIEMU.DLL
+   or QEMM) - see SBEMU main.c enableRM path and SC55JEM.BAT (JEMMEX + JLOAD QPIEMU.DLL). Trap 3D4h/3D5h (and 3DAh
+   with /3DA) for V86 code; handlers are the same functions (QEMM_TF_PM flag clear). Test with the rm.img from
+   mkimg.sh (JEMMEX) + a real-mode flipper (small .COM, nasm) and a real-mode game if one flips (check testgames).
+   Measure cost on 86Box PII-450 with perf86.sh (JEMM case) - JEMM traps are slower than HDPMI's.
+3. Milestone 2 checkpoint: perf86 none/log with VESA hook loaded (must stay < 1%), FRAMELOG.TXT (options + which
+   games), pack/mkzip.sh -test3, HANDOFF, 1-3 lessons in priavte LESSONS.md. Then milestone 3 (Win98 hook DLL:
+   DirectDraw/D3D Flip + Glide grBufferSwap first, launch fallback) in its own chat.
+Later research: DOS Glide (Voodoo MMIO, no ports): hook grBufferSwap in the loaded glide2x.ovl in memory, or read a
+Voodoo2 swap-history register (unverified - check the datasheet).
+
+## 2026-11-17 late - /3DA mode + ROTT done, waiting for hardware results (test2 zip)
 
 Test build: release/FRAMELOG-0.1-test2.zip (pack/mkzip.sh -test2), replaces test1.
 /3DA[:ms] (dos/framelog.c vsync_trap): traps 3DAh; frame = first retrace start the game reads after >= 6 ms away
