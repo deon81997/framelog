@@ -1,17 +1,21 @@
 # HANDOFF — FRAMELOG
 
-## 2026-11-17 serial-bench (host side, parallel chat) - metadata, suites, reports, GAMES.md done
+## 2026-11-17 serial-bench (host side, parallel chat) - metadata, suites, reports, M record, capture analyzer done
 
-serial-bench main 3b57d49 (48 unit tests, `python3 -m unittest discover -s tests`), framelog untouched except this section:
+serial-bench main d761b5f (66 unit tests, `python3 -m unittest discover -s tests`), framelog untouched except this section:
 - Metadata: `fllog.py --gpu --driver --res --depth --cpu --game --notes [--meta file.ini]` -> `# key=value` CSV
-  comment lines (flmeta.py); `flstats.py --label-by gpu,res --group-by gpu --where key=value`. No 'M' record yet:
-  if a game-PC side sends one, add it to flproto.TYPES and merge it in fllog (CLI wins) - host side only so far.
-- Suites: `fllog.py [PORT] --suite suite.ini` (suites/example.ini): one CSV per run `game-gpu-res.csv`, split at
-  B/E markers or gaps (`gap` s, frame time or wire silence), fragments < `min_frames` dropped, runs = INI sections in order.
-- Reports: `flreport.py FOLDER -o report/` -> gpu-*.html per GPU + compare.html + index.html (`--default gpu=...`
-  for pre-metadata CSVs). The 86Box CSVs of 11/17 were gone (/tmp): tests use look-alikes (tests/synth.py).
-- docs/GAMES.md (serial-bench): coverage template seeded with the 11/17 86Box results; add VESA rows (Duke ScreenMode 1).
-Next: real-hardware suite run -> flreport; 'M' record end to end; capture analyzer (milestone 4).
+  lines; `flstats.py --label-by/--group-by/--where`.
+- 'M' record, host side: serial-bench docs/PROTOCOL-M.md (proposal: M = seq u8 + 15 text bytes, 'key=value\n' lines,
+  NUL ends, after H before B). fllog merges it (user's values win, pc_<key> on mismatch). TO DO game-PC side: DOS
+  TSR (VESA 4F00h OEM string, mode, CPUID) + Win98 DLL (DDraw GetDeviceIdentifier, mode); then move the table to PROTOCOL.md.
+- Suites: `fllog.py [PORT] --suite suite.ini [--report DIR --report-src results/]`: one CSV per run `game-gpu-res.csv`
+  (split at B/E or gaps, fragments < min_frames dropped), HTML report at the end.
+- Reports: `flreport.py FOLDER -o report/` -> gpu-*.html + compare.html + index.html (`--default gpu=...` for old CSVs).
+- Capture analyzer (milestone 4, host part): `flcap.py capture.avi -o run.csv [--serial fllog.csv] [--multi-tear 3]`:
+  frame times / tear lines / repeats / runts from a VGA capture at the game's refresh, same CSV format. Tested on a
+  scan-out simulator only (tests/capsynth.py) - needs one real capture (Heretic or Duke ScreenMode 2, 70 Hz).
+- serial-bench docs/GAMES.md: coverage list, now with the VESA results (Duke ScreenMode 1, FLIP B) and CAPTURE rows.
+Next: hardware suite run -> flreport; a real capture for flcap; M record in the DOS TSR / Win98 DLL.
 
 ## RESUME HERE (2026-11-17 handoff) - GOAL: one-stop retro GPU benchmark. Next: Win98 hook DLL
 
