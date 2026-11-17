@@ -1,6 +1,18 @@
 # HANDOFF — FRAMELOG
 
-## RESUME HERE (2026-11-17) - MILESTONE 1 DONE (1a-1d), next: milestone 2
+## RESUME HERE (2026-11-17, evening) - pre-hardware checks done, waiting for the user's hardware results
+
+Test build: release/FRAMELOG-0.1-test1.zip on main (pack/mkzip.sh -test1; FRAMELOG.TXT has the hardware checklist).
+Tags/releases are refused here (403): the zip on main is the download.
+Real games on 86Box PII-450 + SBEMU + SC-55 (dos/testrig/game86.sh, COM1 -> socat pty -> fllog.py):
+- FLIP 40 s: 1839/1839 frames through 86Box's real UART timing, 0 junk, stop marker received.
+- Duke 3D 1.3D ScreenMode = 0: 2508 frames, 0 lost, gameplay 10-20 ms, level-load gap 7.6 s (/tmp/flgame/duke-mode0.csv).
+- Duke ScreenMode = 2 (screen buffered) and Heretic 1.2 (mode 13h copy): NO start-address writes -> 0 frames,
+  the host never gets a header (S is read only at flips). These need /3DA (milestone 2). ROTT: needs SOUND.ROT
+  (SNDSETUP), not run.
+- fllog.py now streams rows, writes stop=marker|host (host = normal for DOS), sends X+S if the game PC was still logging.
+
+## 2026-11-17 - MILESTONE 1 DONE (1a-1d), next: milestone 2
 
 Done: 1a feasibility, 1b FRAMELOG.EXE TSR (dos/framelog.c), 1c host tools (deon81997/serial-bench: fllog.py,
 flstats.py, flproto.py + tests), 1d overhead on 86Box PII-450. Not tested yet: real hardware (D810, P5PE-VM),

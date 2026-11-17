@@ -139,7 +139,7 @@ static void usage(void)
 {
     puts("FRAMELOG [/COM:n|hex[,baud]] [/AUTO]  - load the frame-time logger (default COM1,115200)\n"
          "FRAMELOG /STATUS                       - counters of the loaded copy\n"
-         "Start/stop logging from the host PC (serial-bench: framelog_log.py). Needs HDPMI32i.");
+         "Start/stop logging from the host PC (serial-bench: fllog.py). Needs HDPMI32i.");
 }
 
 int main(int argc, char **argv)

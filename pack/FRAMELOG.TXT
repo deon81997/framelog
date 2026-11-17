@@ -46,6 +46,17 @@ LIMITS
     the host's byte only when the game flips a page.
   - Do not use the same COM port as SBEMU /DBG or serial MIDI.
 
+WHICH GAMES LOG (CRTC mode, tested in 86Box)
+  A frame is counted when the game flips pages (writes the VGA start
+  address). Games that draw straight into one screen page are NOT seen.
+  - Duke Nukem 3D 1.3D: works with ScreenMode = 0 in DUKE3D.CFG.
+    ScreenMode = 2 ("screen buffered") copies to the screen: no frames.
+  - Heretic 1.2: copies to the screen (mode 13h): no frames.
+  - Doom: flips pages in mode Y, expected to work (not tested yet).
+  - VESA modes (Duke 640x480 etc.) and copy-to-screen games need the
+    later /3DA and VESA modes.
+  If fllog.py never prints "header", the game did not flip a page yet.
+
 MEASURED COST
   About 0.35% of the game's CPU at 70 fps on a Pentium II 450.
   SBEMU / SC-55 load is unchanged (no IRQ0, PIT or keyboard hooks).
@@ -59,10 +70,10 @@ HARDWARE TEST CHECKLIST
   [ ] Run on both machines: Dell D810 and ASUS P5PE-VM.
   [ ] FRAMELOG /STATUS after loading (before any game): send the output.
   [ ] FLIP 20 70 with FRAMELOG logging: check the CSV shows ~70 fps.
-  [ ] Duke Nukem 3D demo playback WITHOUT FRAMELOG loaded (note fps).
-  [ ] Duke Nukem 3D demo playback WITH FRAMELOG, logged to a CSV.
-  [ ] Doom demo (timedemo) WITHOUT FRAMELOG loaded (note the result).
-  [ ] Doom demo (timedemo) WITH FRAMELOG, logged to a CSV.
+  [ ] Duke Nukem 3D (DUKE3D.CFG ScreenMode = 0) demo WITHOUT FRAMELOG.
+  [ ] Duke Nukem 3D, same, WITH FRAMELOG, logged to a CSV.
+  [ ] Doom: DOOM -timedemo demo3 WITHOUT FRAMELOG (note the realtics).
+  [ ] Doom: same WITH FRAMELOG, logged to a CSV (realtics should match).
   [ ] FRAMELOG /STATUS again after the runs: send the output.
   [ ] SBDIAG reports with and without FRAMELOG.
   [ ] Send back: all CSV files (name them game-machine.csv), the
