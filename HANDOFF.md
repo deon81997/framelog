@@ -1,9 +1,31 @@
 # HANDOFF — FRAMELOG
 
-## RESUME HERE (2026-11-17) - 1a DONE, feasible
+## RESUME HERE (2026-11-17) - MILESTONE 1 DONE (1a-1d), next: milestone 2
 
-1a result: two resident HDPMI32i trap clients work. FLTSR (dos/feas) traps 3D4h/3D5h next to SBEMU + SC-55,
-both load orders. Next: 1b (real TSR), 1c (serial-bench logger), 1d (86Box overhead).
+Done: 1a feasibility, 1b FRAMELOG.EXE TSR (dos/framelog.c), 1c host tools (deon81997/serial-bench: fllog.py,
+flstats.py, flproto.py + tests), 1d overhead on 86Box PII-450. Not tested yet: real hardware (D810, P5PE-VM),
+a real game, a real null-modem cable to a host PC. 3DAh-vs-SC-55 test skipped (3DAh mode = milestone 2).
+
+1d numbers (86Box P3B-F PII-450 dynarec + ES1371, SBEMU + SC-55 mk1 resident, FLIP 30 s 70 fps + MIDI chord changes):
+| case | SC55LOG | SBDIAG CPU / lost ticks / longest | FLIP spare loops |
+|---|---|---|---|
+| none | 0.48x real time | 61% / 0.0% / 3.55-3.61 ms | 578.69M, 578.67M |
+| FRAMELOG idle | 0.48x | 61% / 0.0% / 3.47 ms | (not measured) |
+| FRAMELOG logging (/AUTO, COM1 115200) | 0.48x | 61% / 0.0% / 3.56-3.61 ms | 576.79M, 576.60M (-0.33..0.36%) |
+-> game-visible cost ~0.35% of its spare CPU at 70 fps (4 trapped CRTC writes per flip, ~20 us per flip);
+SBEMU/SC-55 unchanged. Under 1%: CRTC logging stays on by default. 1921/1921 frames, 0 lost, 0 record drops.
+
+QEMU e2e (dos/testrig/e2e.sh, COM1 -> TCP -> fllog.py): SBEMU + SC-55 resident, 852/852 frames, median 14.278 ms
+at 70 fps (want 14.286); QEMU host stalls make FLIP catch up (runt frames), judge medians there.
+
+Next 3 steps (milestone 2):
+1. Real-hardware check list for the user (one list): D810 + P5PE-VM, FRAMELOG after SC55 in AUTOEXEC, null-modem
+   to the host, fllog.py + flstats.py with Duke 3D / Doom (PM games). Compare with SBDIAG off/on.
+2. /3DA mode (opt-in): trap 3DAh, frame = vsync edge seen by the game; measure vs SC-55 underruns on PII-450.
+3. VESA 4F07h hook (INT 10h in PM via DPMI? or the RM vector) + /RM via JEMM/QEMM (qemm.c from SBEMU).
+Known limits: only protected-mode games are trapped (HDPMI traps PM only); S/X take effect at the next flip
+(no pump without CRTC writes - by design, no IRQ0/INT 1Ch); state found via 0040:00F0 (BIOS ICA) - move to AMIS
+INT 2Dh later if a program clashes.
 
 Findings (keep):
 - HDPMI calls each client's handler with that client's own CS/DS (BX at install); our wrapper's stack = our DS.
@@ -22,14 +44,9 @@ Resume:
   releases/download/v3.4/djgpp-linux64-gcc1220.tar.bz2; `gh release download` is 403 for unattached repos)
 - VMs: priavte store-dos71 + store-86rig (86Box build). ROM zip: priavte store-personal-1.0.0-beta.130-usb
   (/tmp/sp/store/*.zip; never in this repo). NUKED-SBEMU-MUXED cloned read-only at /home/claude/deon81997/nuked-sbemu-muxed.
-- QEMU: dos/testrig/feas.sh ZIP A B C (~1 min each). 86Box: B86=<86Box> dos/testrig/feas86.sh ZIP N B C (~1.5 min each).
+- QEMU: dos/testrig/feas.sh ZIP A B C, e2e.sh ZIP plain|sbemu 70 (~1 min). 86Box (B86=/home/claude/86box/src/build/src/86Box):
+  feas86.sh ZIP N B C, perf86.sh ZIP none idle log (FAST=fast skips SC55LOG; ~2.5 min/case, ~1 min fast).
 
-Next 3 steps:
-1. 1b: dos/framelog.c from fltsr.c: ring buffer of TSC, polled UART pump from inside the trap (sbemu/serial.c, one FIFO
-   load per pump), start/stop byte from the host, /COM: option, protocol header with TSC calibration.
-   No PIT, no IRQ0, no port 60h. Write docs/PROTOCOL.md first.
-2. 1c: serial-bench: logger (pyserial / QEMU socket://), CSV, stats (avg, min, 1%/0.1% lows), graph.
-3. 1d: 86Box PII-450 SBDIAG + SC55LOG with/without FRAMELOG and a 70 fps flipper; >1% = off by default.
 
 Test downloads: /tmp/dl/djgpp (DJGPP gcc 12.2, andrewwutw v3.4).
 
@@ -38,6 +55,6 @@ Test downloads: /tmp/dl/djgpp (DJGPP gcc 12.2, andrewwutw v3.4).
 | Milestone | State |
 |---|---|
 | 1a feasibility (2 trap clients under HDPMI32i) | DONE 2026-11-17: feasible (QEMU A/B/C + 86Box N/B/C) |
-| 1b DOS TSR | not started |
-| 1c Python host logger | not started |
-| 1d overhead measurement | not started — needs VMs |
+| 1b DOS TSR | DONE: dos/framelog.c (FRAMELOG.EXE /COM: /AUTO /STATUS) |
+| 1c Python host logger | DONE: serial-bench fllog.py / flstats.py |
+| 1d overhead measurement | DONE: ~0.35% game CPU at 70 fps, SBEMU/SC-55 unchanged |

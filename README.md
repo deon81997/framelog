@@ -45,6 +45,14 @@ game files are ever replaced or modified.
 - Own, configurable COM port; must not clash with SBEMU `/DBG` or serial MIDI.
 - Traps VGA ports only; never anything SBEMU traps.
 
+## Using it (milestone 1, DOS)
+
+Game PC, AUTOEXEC.BAT or the game's batch file, after HDPMI32I (or after SC55 when NUKED SB-EMU is used):
+`FRAMELOG /COM:1` (COM1-4 or a hex port, optional `,baud`; default COM1,115200). `FRAMELOG /STATUS` shows counters.
+Host PC: `python3 fllog.py COM3 -o run.csv --label D810`, play, Ctrl+C, then `python3 flstats.py run.csv --png run.png`
+(serial-bench). Logs protected-mode games (DOS4GW, DJGPP, PMODE/W...); real-mode games need /RM (milestone 2).
+Measured cost on a Pentium II 450: ~0.35% of the game's CPU at 70 fps, no change to SBEMU / SC-55 load.
+
 ## Repositories
 
 - **framelog** (this repo): DOS TSR, Win98 loader + hook DLL, serial protocol
