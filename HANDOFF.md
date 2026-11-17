@@ -16,6 +16,9 @@ serial-bench main d761b5f (66 unit tests, `python3 -m unittest discover -s tests
   scan-out simulator only (tests/capsynth.py) - needs one real capture (Heretic or Duke ScreenMode 2, 70 Hz).
 - serial-bench docs/GAMES.md: coverage list, now with the VESA results (Duke ScreenMode 1, FLIP B) and CAPTURE rows.
 Next: hardware suite run -> flreport; a real capture for flcap; M record in the DOS TSR / Win98 DLL.
+Later (user 11/17, after the main goals): optional local logging on the game PC (no 2nd PC): DOS = frames in XMS,
+  FRAMELOG.BIN written at stop/exit when InDOS=0 (never mid-game); Win98 = worker thread file; host `fllog.py --file`.
+  Serial stays the default (live, survives crashes).
 
 ## RESUME HERE (2026-11-17 handoff) - GOAL: one-stop retro GPU benchmark. Next: Win98 hook DLL
 
