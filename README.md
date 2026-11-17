@@ -53,6 +53,11 @@ Host PC: `python3 fllog.py COM3 -o run.csv --label D810`, play, Ctrl+C, then `py
 (serial-bench). Logs protected-mode games (DOS4GW, DJGPP, PMODE/W...); real-mode games need /RM (milestone 2).
 Measured cost on a Pentium II 450: ~0.35% of the game's CPU at 70 fps, no change to SBEMU / SC-55 load.
 
+## Goal and order
+
+Close to a one-stop shop for benchmarking retro GPUs (DOS + Win98). Order: Win98 hook DLL (DirectDraw/D3D,
+Glide, OpenGL), run metadata, VESA hook, benchmark suites + report generator, DOS Glide, capture analyzer, /RM.
+
 ## Repositories
 
 - **framelog** (this repo): DOS TSR, Win98 loader + hook DLL, serial protocol

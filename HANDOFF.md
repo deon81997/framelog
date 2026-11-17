@@ -1,33 +1,39 @@
 # HANDOFF — FRAMELOG
 
-## RESUME HERE (2026-11-17 handoff to a new chat) - milestone 2: VESA hook, then /RM
+## RESUME HERE (2026-11-17 handoff) - GOAL: one-stop retro GPU benchmark. Next: Win98 hook DLL
 
-State: main f7997d4+ (this commit). Milestone 1 done; milestone 2: /3DA done (see next section). No hardware results
-yet - continue without them. Restore: DJGPP (/tmp/dl/djgpp, curl URL below), priavte store-dos71 + store-86rig +
-store-personal-1.0.0-beta.130-usb (ROM zip) + store-personal (testgames: unpack per dos/testrig/README.md),
-NUKED-SBEMU-MUXED read-only clone (MUXED=), serial-bench (SB=). apt: qemu-system-x86 zstd mtools socat xvfb xdotool
-openbox imagemagick librtmidi6; pip: pyserial matplotlib. One VM rig at a time (2 cores).
+Repos: deon81997/framelog (this repo: DOS TSR, Win98 loader/DLL in win98/, protocol, HANDOFF = the only handoff),
+deon81997/serial-bench (host tools: logger, stats, reports, later capture analyzer; no handoff of its own),
+deon81997/priavte (PLAYBOOK, LESSONS, VM store), NUKED-SBEMU-MUXED read-only (borrowed code + testrig).
+State: milestone 1 done, /3DA done. No hardware results yet - continue without them.
 
-Next 3 steps:
-1. VESA 4F07h hook (default on, /NOVESA off; header modes bit 2). Design: a 28-byte real-mode stub in our DOS block
-   (seg+1:0) hooked on the RM INT 10h vector (PM games' INT 10h is reflected to RM by DOS4GW/HDPMI):
-     cmp ax,4F07h / jne chain / test bl,7Dh (00h,02h,80h,82h = set/schedule start) / jnz chain /
-     call far [cs:cb] / chain: jmp far [cs:old]     bytes: 3D 07 4F 75 0A F6 C3 7D 75 05 2E FF 1E 14 00 2E FF 2E 18 00, cb@20 old@24
-   cb = _go32_dpmi_allocate_real_mode_callback_retf -> PM handler: rdtsc + the same burst merge as CRTC (last_sa,
-   0.5 ms) + frame_event. Games using the VBE 2.0 PM interface (4F0Ah) on VGA-compatible cards write CRTC 0C/0D
-   themselves -> already caught by the CRTC trap. Test: game86.sh duke with DUKE3D.CFG ScreenMode = 1, 640x480
-   (VESA; 86Box vesawc cfg = Voodoo3 VBE); expect ~1 frame per 4F07h; check console speed (INT 10h stub cost) and
-   /STATUS vesa counter. Also e2e in QEMU (std VGA VBE) with a FLIP option that flips via INT 10h 4F07h.
-2. /RM: real-mode games (no HDPMI trap in V86). Copy SBEMU qemm.c (QEMM_Install_IOPortTrap via QPI: JEMM + QPIEMU.DLL
-   or QEMM) - see SBEMU main.c enableRM path and SC55JEM.BAT (JEMMEX + JLOAD QPIEMU.DLL). Trap 3D4h/3D5h (and 3DAh
-   with /3DA) for V86 code; handlers are the same functions (QEMM_TF_PM flag clear). Test with the rm.img from
-   mkimg.sh (JEMMEX) + a real-mode flipper (small .COM, nasm) and a real-mode game if one flips (check testgames).
-   Measure cost on 86Box PII-450 with perf86.sh (JEMM case) - JEMM traps are slower than HDPMI's.
-3. Milestone 2 checkpoint: perf86 none/log with VESA hook loaded (must stay < 1%), FRAMELOG.TXT (options + which
-   games), pack/mkzip.sh -test3, HANDOFF, 1-3 lessons in priavte LESSONS.md. Then milestone 3 (Win98 hook DLL:
-   DirectDraw/D3D Flip + Glide grBufferSwap first, launch fallback) in its own chat.
-Later research: DOS Glide (Voodoo MMIO, no ports): hook grBufferSwap in the loaded glide2x.ovl in memory, or read a
-Voodoo2 swap-history register (unverified - check the datasheet).
+Priorities (user 11/17: wider game coverage before any public post; aim = close to a one-stop shop for retro GPUs):
+1. Win98 loader + hook DLL (was milestone 3): global SetWindowsHookEx loader, DLL patches in memory DirectDraw
+   Flip/Blt (D3D DX5-7 presents through it), Glide grBufferSwap (glide2x/glide3x), then OpenGL wglSwapBuffers/
+   SwapBuffers incl. 3dfx MiniGL in the game folder; RDTSC -> lock-free queue -> worker thread -> COM (same protocol,
+   source=1 Win98, modes bit 4); "framelog game.exe" launch fallback (CreateProcess suspended + inject). No proxy DLLs,
+   no replaced files. Build: MinGW i686 win32 (Ubuntu g++-mingw-w64-i686-win32 = msvcrt; chkimp2-style import check
+   for Win98, see priavte LESSONS: no _strtoui64, CreateThread needs a thread-id pointer). Test: priavte
+   store-w98qi-86box (86Box PII-450, Voodoo/S3 + DirectX) and store-w98qi-qemu; COM1 -> socat pty -> fllog.py.
+   Test apps: write tiny DDraw-flip / D3D / Glide / OpenGL test programs first, then demos (Quake 2 / Forsaken /
+   3DMark99 if obtainable as free downloads - list what's needed from the user once).
+2. Run metadata: GPU, driver, resolution, depth, CPU in the header/CSV (new 'M' text record, host --label fields).
+3. VESA 4F07h hook for DOS (design below), then suites (one batch of timedemos, host logs one CSV per run) and a
+   report generator in serial-bench (per-GPU page + side-by-side), and a game coverage list (docs/GAMES.md).
+4. DOS Glide research (Voodoo MMIO: in-memory grBufferSwap hook in the loaded glide2x.ovl, or a Voodoo2
+   swap-history register - unverified), capture-card analyzer (milestone 4), /RM last.
+
+VESA design (for step 3): a 28-byte real-mode stub in our DOS block (seg+1:0) on the RM INT 10h vector (PM games'
+INT 10h is reflected to RM): cmp ax,4F07h / jne chain / test bl,7Dh (00h,02h,80h,82h = set/schedule) / jnz chain /
+call far [cs:cb] / chain: jmp far [cs:old]   bytes: 3D 07 4F 75 0A F6 C3 7D 75 05 2E FF 1E 14 00 2E FF 2E 18 00,
+cb@20 old@24; cb = _go32_dpmi_allocate_real_mode_callback_retf -> rdtsc + CRTC burst merge + frame_event. VBE 2.0
+PM-interface flips on VGA-compatible cards already hit the CRTC trap. Test: Duke ScreenMode = 1 640x480 on 86Box.
+/RM: SBEMU qemm.c via JEMM + QPIEMU (SC55JEM.BAT), same handlers.
+
+Restore: DJGPP (curl github.com/andrewwutw/build-djgpp/releases/download/v3.4/djgpp-linux64-gcc1220.tar.bz2 ->
+/tmp/dl/djgpp), priavte store-* branches (README table), ROM zip store-personal-1.0.0-beta.130-usb, test games
+store-personal (dos/testrig/README.md). apt: qemu-system-x86 zstd mtools socat xvfb xdotool openbox imagemagick
+librtmidi6; pip: pyserial matplotlib. One VM rig at a time (2 cores).
 
 ## 2026-11-17 late - /3DA mode + ROTT done, waiting for hardware results (test2 zip)
 
