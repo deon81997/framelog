@@ -3,7 +3,7 @@
 ## RESUME HERE (2026-11-17)
 
 Repo set up; no code yet. Next: milestone 1a feasibility test.
-- Home repo: deon81997/framelog (private). VMs: priavte store-dos71 (+ store-86box-irq),
+- Home repo: deon81997/framelog (private). Host tools (1c) go to deon81997/serial-bench. VMs: priavte store-dos71 (+ store-86box-irq),
   per PLAYBOOK - there is no sbemu-vms repo.
 - Borrow source: NUKED-SBEMU-MUXED sc55-pack/ (hdpmipt.c/.h, qemm.h, sbemu/serial.*,
   sbemu/dbglink.c, main.c) - all present.

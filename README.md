@@ -45,6 +45,12 @@ game files are ever replaced or modified.
 - Own, configurable COM port; must not clash with SBEMU `/DBG` or serial MIDI.
 - Traps VGA ports only; never anything SBEMU traps.
 
+## Repositories
+
+- **framelog** (this repo): DOS TSR, Win98 loader + hook DLL, serial protocol
+  spec, project README/HANDOFF.
+- **serial-bench**: host tools (Python logger, stats, graphs, capture analyzer).
+
 ## Borrowed code
 
 From `sc55-pack/` in NUKED-SBEMU-MUXED (GPL, same author): `hdpmipt.c/.h`,
