@@ -1,0 +1,70 @@
+FRAMELOG 0.1 - frame-time logger for DOS games over serial
+==========================================================
+
+WHAT IT DOES
+  FRAMELOG.EXE is a small resident program for the game PC. It notices
+  every page flip of a running game (writes to the VGA CRTC start address)
+  and sends a timestamp per frame over a serial port to a second PC (the
+  host). The host saves the frames to a CSV file and makes stats and
+  graphs (average fps, 1% / 0.1% lows, frame-time plot). No overlay, no
+  game patching, no files are changed. Load it once, every game is logged.
+
+INSTALL (GAME PC)
+  1. Copy FRAMELOG.EXE to the game PC, e.g. C:\FRAMELOG.
+  2. Add a line to AUTOEXEC.BAT (or the game's batch file):
+       C:\FRAMELOG\FRAMELOG /COM:1
+     It must come AFTER  HDPMI32I.EXE -r -x , or, when NUKED SB-EMU is
+     used, after the SC55 line (FRAMELOG needs HDPMI32i to be resident).
+  3. Reboot. FRAMELOG prints its UART, baud rate and CPU MHz when loaded.
+
+OPTIONS
+  FRAMELOG /COM:n[,baud]    COM1-COM4 (default COM1,115200)
+  FRAMELOG /COM:hex[,baud]  UART at a hex port address, e.g. /COM:2F8
+  FRAMELOG /AUTO            start logging at once (no host S byte needed)
+  FRAMELOG /STATUS          counters of the loaded copy (flips, frames,
+                            lost, bytes sent, host bytes, starts, traps)
+
+CABLE
+  Use a NULL-MODEM serial cable (crossed TX/RX) between the game PC's COM
+  port and the host's COM port or USB-serial adapter. A straight cable
+  does not work. 115200 baud is fine for any frame rate up to ~1200 fps.
+
+HOST PC (Windows or Linux)
+  1. Install Python 3, then:  pip install pyserial matplotlib
+  2. In the HOST folder:
+       py fllog.py COM3 -o run.csv --label NAME
+     (or LOG.BAT COM3 run.csv NAME; on Linux python3 and /dev/ttyUSB0)
+     Start it before or while the game runs.
+  3. Play / run the demo. Press Ctrl+C on the host when done.
+  4. Stats and graph, one or more runs (several = comparison):
+       py flstats.py a.csv b.csv --png g.png
+
+LIMITS
+  - Protected-mode games only for now (DOS4GW, DJGPP, PMODE/W ...).
+    Real-mode games are not logged yet (/RM is planned).
+  - Start and stop act at the game's NEXT page flip: the game PC reads
+    the host's byte only when the game flips a page.
+  - Do not use the same COM port as SBEMU /DBG or serial MIDI.
+
+MEASURED COST
+  About 0.35% of the game's CPU at 70 fps on a Pentium II 450.
+  SBEMU / SC-55 load is unchanged (no IRQ0, PIT or keyboard hooks).
+
+TEST GAME
+  FLIP.EXE SECONDS FPS [LONG] [M] flips the screen at a fixed rate; every
+  LONG-th frame (default 10) takes twice as long. M also plays MIDI on
+  MPU-401 330h. Example: FLIP 20 70  (log it with fllog.py on the host).
+
+HARDWARE TEST CHECKLIST
+  [ ] Run on both machines: Dell D810 and ASUS P5PE-VM.
+  [ ] FRAMELOG /STATUS after loading (before any game): send the output.
+  [ ] FLIP 20 70 with FRAMELOG logging: check the CSV shows ~70 fps.
+  [ ] Duke Nukem 3D demo playback WITHOUT FRAMELOG loaded (note fps).
+  [ ] Duke Nukem 3D demo playback WITH FRAMELOG, logged to a CSV.
+  [ ] Doom demo (timedemo) WITHOUT FRAMELOG loaded (note the result).
+  [ ] Doom demo (timedemo) WITH FRAMELOG, logged to a CSV.
+  [ ] FRAMELOG /STATUS again after the runs: send the output.
+  [ ] SBDIAG reports with and without FRAMELOG.
+  [ ] Send back: all CSV files (name them game-machine.csv), the
+      FRAMELOG /STATUS outputs, the SBDIAG reports, and any problems
+      seen (hangs, sound glitches, missing frames).
