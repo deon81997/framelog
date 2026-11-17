@@ -19,6 +19,9 @@ Next: hardware suite run -> flreport; a real capture for flcap; M record in the 
 Later (user 11/17, after the main goals): optional local logging on the game PC (no 2nd PC): DOS = frames in XMS,
   FRAMELOG.BIN written at stop/exit when InDOS=0 (never mid-game); Win98 = worker thread file; host `fllog.py --file`.
   Serial stays the default (live, survives crashes).
+Later (user 11/17, when serial is done and fully working): network logging - Win98 DLL worker thread sends UDP
+  (~64 frames per packet, same per-frame cost), host fllog.py UDP listener; DOS via packet driver after that
+  (per-NIC testing, IRQ clashes with SBEMU).
 
 ## RESUME HERE (2026-11-17 handoff) - GOAL: one-stop retro GPU benchmark. Next: Win98 hook DLL
 
