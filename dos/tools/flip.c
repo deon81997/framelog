@@ -3,7 +3,8 @@
  *   OUT 3D4h,AX. M = also play MIDI on the MPU-401 at 330h (UART mode), a 4-note chord change every 8th frame, like a
  *   game's music (keeps the SC-55 busy for overhead measurements). V = copy-to-screen game: no page flips, each
  *   frame "renders" for half a frame time (RDTSC spin) and then waits for round(70/FPS) vertical retraces on 3DAh
- *   (text mode = 70 Hz) like a vsync'd game; LONG frames wait twice as many.
+ *   (text mode = 70 Hz) like a vsync'd game; LONG frames wait twice as many. B = VESA game: VBE mode 101h (640x480x8)
+ *   and flips with INT 10h AX=4F07h (BL 00h / 80h alternating) between lines 0 and 480 (needs a VBE BIOS).
  * Prints the frame count and the TSC rate it measured. GPL-2.0-or-later. */
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,12 +13,16 @@
 #include <string.h>
 #include <go32.h>
 #include <sys/farptr.h>
+#include <dpmi.h>
 static void mpu(int b) { for (int t = 0; t < 100000 && (inportb(0x331) & 0x40); t++) ; outportb(0x330, b); }
 static inline uint64_t rdtsc(void) { uint32_t lo, hi; asm volatile("rdtsc" : "=a"(lo), "=d"(hi)); return ((uint64_t)hi << 32) | lo; }
 int main(int argc, char **argv)
 {
     if (argc < 3) { puts("FLIP SECONDS FPS [LONG]"); return 1; }
-    double secs = atof(argv[1]), fps = atof(argv[2]); int lng = argc > 3 ? atoi(argv[3]) : 10, midi = argc > 4 && strpbrk(argv[4], "Mm"), vs = argc > 4 && strpbrk(argv[4], "Vv");
+    double secs = atof(argv[1]), fps = atof(argv[2]); int lng = argc > 3 ? atoi(argv[3]) : 10, midi = argc > 4 && strpbrk(argv[4], "Mm"), vs = argc > 4 && strpbrk(argv[4], "Vv"), vb = argc > 4 && strpbrk(argv[4], "Bb");
+    __dpmi_regs r;
+    if (vb) { memset(&r, 0, sizeof r); r.x.ax = 0x4F02; r.x.bx = 0x101; __dpmi_int(0x10, &r);
+              if (r.x.ax != 0x004F) { printf("FLIP: VBE mode 101h failed (AX=%04X)\n", r.x.ax); return 2; } }
     int rpf = (int)(70.0 / fps + 0.5); if (rpf < 1) rpf = 1;
     static const int prog[4] = { 0, 48, 33, 73 }, base[4] = { 60, 64, 43, 72 }; int on[4] = { 0 };
     if (midi) { outportb(0x331, 0x3F); for (int c = 0; c < 4; c++) { mpu(0xC0 | c); mpu(prog[c]); } }
@@ -34,6 +39,10 @@ int main(int argc, char **argv)
             uint64_t w = rdtsc() + (uint64_t)(hz / fps / 2);   /* "render": half a frame away from 3DAh */
             while (rdtsc() < w) spins++;
             next = rdtsc();
+        } else if (vb) {
+            while (rdtsc() < next) spins++;
+            memset(&r, 0, sizeof r); r.x.ax = 0x4F07; r.x.bx = (n & 2) ? 0x80 : 0x00; r.x.cx = 0; r.x.dx = (n & 1) ? 0 : 480;
+            __dpmi_int(0x10, &r);
         } else {
         while (rdtsc() < next) spins++;
         unsigned sa = (n & 1) ? 0x0000 : 0x0050;    /* two text rows apart */
@@ -48,7 +57,8 @@ int main(int argc, char **argv)
         if (!vs) next += (lng && n % lng == 0) ? 2 * per : per;
     }
     if (midi) for (int c = 0; c < 4; c++) if (on[c]) { mpu(0x80 | c); mpu(on[c]); mpu(0); }
-    outportw(0x3D4, 0x000C); outportw(0x3D4, 0x000D);
+    if (vb) { memset(&r, 0, sizeof r); r.x.ax = 0x0003; __dpmi_int(0x10, &r); }
+    else { outportw(0x3D4, 0x000C); outportw(0x3D4, 0x000D); }
     printf("FLIP: %u frames, %.0f fps, every %d. frame long, TSC %.0f Hz, spare loops %llu\n", n, fps, lng, hz, (unsigned long long)spins);
     return 0;
 }

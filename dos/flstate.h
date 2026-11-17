@@ -13,5 +13,8 @@ typedef struct {
     volatile uint32_t logging, starts;
     volatile uint32_t traps, flips, frames, lost, sent, txlost, rx;
     uint32_t mode3da, arm_ticks; volatile uint32_t traps3da;
+    uint32_t rm; volatile uint32_t traps_rm;   /* /RM: QEMM/QPIEMU V86 traps on, trap calls from real-mode code */
+    uint32_t vesa; volatile uint32_t vesa_calls;   /* /NOVESA clears vesa; display-start calls (INT 10h 4F07h + VBE PM thunk) */
+    volatile uint32_t vbepm, vbepm_skip;            /* INT 10h 4F0Ah (PM interface) requests, tables not patched */
 } FLSTATE;
 #endif

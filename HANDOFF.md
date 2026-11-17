@@ -35,6 +35,16 @@ Restore: DJGPP (curl github.com/andrewwutw/build-djgpp/releases/download/v3.4/dj
 store-personal (dos/testrig/README.md). apt: qemu-system-x86 zstd mtools socat xvfb xdotool openbox imagemagick
 librtmidi6; pip: pyserial matplotlib. One VM rig at a time (2 cores).
 
+## 2026-11-17 night - VESA hook done; /RM + milestone-2 checkpoint in progress (user-asked chat, dos/ only)
+
+VESA hook (default on, /NOVESA; header modes bit 2): INT 10h 4F07h via RM stub + RMCB (QEMU FLIP B: 836/836 calls,
+e2e PASS with SBEMU) AND the VBE 2.0 PM interface (4F0Ah). Correction to the design above: Duke 3D VESA 640x480 on
+86Box Voodoo3 never calls 4F07h and writes no CRTC - it takes the PM table (VESADBG log: 4F00, 4F01 x2, 4F02 4101h,
+4F0Ah). Now we copy the table to seg+5:0 with a 19-byte thunk in front of SetDisplayStart (IN 3D4h with
+EAX=464Cxxxxh -> crtc_trap -> flip; the code is position-independent per VBE 2.0). Duke: 596 frames, median 54.6 ms
+(~18 fps), stop=marker, game fine. Stub source dos/tools/vesastub.asm -> dos/vesastub.h (tools/bin2h.py);
+make VESADBG=1 = every 4F07h/4F0Ah call as text on the UART (read with cat /tmp/hcom1, not fllog).
+
 ## 2026-11-17 late - /3DA mode + ROTT done, waiting for hardware results (test2 zip)
 
 Test build: release/FRAMELOG-0.1-test2.zip (pack/mkzip.sh -test2), replaces test1.
