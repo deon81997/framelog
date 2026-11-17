@@ -1,6 +1,8 @@
 /* FRAMELOG.EXE - DOS frame-time logger TSR (DJGPP, resident under HDPMI32i, coexists with NUKED SB-EMU).
  *
- *   FRAMELOG [/COM:n|hex[,baud]] [/AUTO]   load (default COM1, 115200); /AUTO = log from now, no host byte needed
+ *   FRAMELOG [/COM:n|hex[,baud]] [/AUTO] [/3DA[:ms]]   load (default COM1, 115200); /AUTO = log from now, no host byte
+ *       needed; /3DA = frames are the vertical retraces the game waits for (input status 3DAh polled), for games
+ *       that copy to the screen instead of flipping pages. Opt-in: every 3DAh read is trapped (costly in vsync loops).
  *   FRAMELOG /STATUS                        print the resident copy's counters
  *
  * Traps CRTC 3D4h/3D5h (protected-mode programs, HDPMI port trap). A write to start-address register 0Ch/0Dh =
@@ -25,6 +27,12 @@ static UartPort U;
 static QEMM_IOPT iopt;
 static uint8_t crtc_index;
 static uint64_t last_sa;             /* TSC of the last start-address write (burst merge) */
+static int mode3da;                  /* /3DA: frames = vsync edges seen by the game, CRTC writes only pump */
+static uint8_t last3da;              /* last 3DAh value the game read */
+static uint64_t last3da_t;           /* TSC of the game's previous 3DAh read */
+static int armed3da = 1;             /* a new wait started (the game was away from 3DAh for arm_ticks) */
+static uint32_t arm_ms = 6;
+static QEMM_IOPT iopt3da;
 static uint64_t ring[FL_RINGN];      /* flip timestamps, written by the trap, drained by the pump */
 static volatile uint32_t rhead, rtail;
 static uint64_t prev_frame;          /* TSC of the previous frame sent (or of the begin marker) */
@@ -45,7 +53,7 @@ static void put_rec(uint8_t type, const void *p, int n)
 
 static void start_log(uint64_t now)
 {
-    struct __attribute__((packed)) { uint8_t ver, src; uint32_t hz; uint8_t modes, res; } h = { 1, 0, St.tsc_hz, 1, 0 };
+    struct __attribute__((packed)) { uint8_t ver, src; uint32_t hz; uint8_t modes, res; } h = { 1, 0, St.tsc_hz, mode3da ? 2 : 1, 0 };
     put_rec('H', &h, 8);
     put_rec('B', &now, 8);
     prev_frame = now; St.frames = 0; St.lost = 0; lost_pending = 0;
@@ -82,6 +90,36 @@ static void pump(void)
     if ((lsr & 0x20) && U.head != U.tail) St.sent += uart_pump(&U);
 }
 
+static void frame_event(uint64_t now)
+{
+    if (St.logging) {
+        if (rhead - rtail < FL_RINGN) ring[rhead++ & (FL_RINGN - 1)] = now;
+        else { St.lost++; lost_pending++; }
+    }
+    St.flips++;
+    pump();
+}
+
+/* /3DA: the game reads input status 1. One frame = the first 0 -> 1 change of bit 3 (vertical retrace) the game sees
+ * after it came back to 3DAh from other work (no 3DAh read for arm_ms). So a game that waits 2 retraces per frame in
+ * one polling loop (35 fps on a 70 Hz mode) counts once per frame, not once per retrace. arm_ms (/3DA:ms, default 6)
+ * must be longer than what stops the game's loop mid-wait (SBEMU + SC-55 ISR up to 3.6 ms on a PII-450 + trap time:
+ * 4 ms gave 10% double counts there, 6 ms none) and shorter than the game's own work between waits. */
+static uint32_t vsync_trap(uint32_t port, uint32_t val, uint32_t out)
+{
+    St.traps3da++;
+    if (out) { HDPMIPT_UntrappedIO_Write((uint16_t)port, (uint8_t)val); return val; }
+    uint8_t v = HDPMIPT_UntrappedIO_Read((uint16_t)port);
+    uint64_t now = rdtsc();
+    if (now - last3da_t > St.arm_ticks) armed3da = 1;
+    last3da_t = now;
+    if ((v & 8) && !(last3da & 8)) {           /* retrace edge: a frame if armed; pump once per refresh anyway */
+        if (armed3da) { armed3da = 0; frame_event(now); } else pump();
+    }
+    last3da = v;
+    return (val & ~0xFFu) | v;
+}
+
 static uint32_t crtc_trap(uint32_t port, uint32_t val, uint32_t out)
 {
     /* HDPMI: OUT DX,AX = two byte calls, the 3D5h half taken from our return >> 8 -> return EAX unchanged;
@@ -94,13 +132,8 @@ static uint32_t crtc_trap(uint32_t port, uint32_t val, uint32_t out)
     if (crtc_index != 0x0C && crtc_index != 0x0D) return val;
     uint64_t now = rdtsc();
     if (now - last_sa > St.merge_ticks) {        /* first write of a flip */
-        if (St.logging) {
-            if (rhead - rtail < FL_RINGN) ring[rhead++ & (FL_RINGN - 1)] = now;
-            else { St.lost++; lost_pending++; }
-        }
-        St.flips++;
         last_sa = now;
-        pump();                                   /* one LSR read per flip when idle */
+        if (mode3da) pump(); else frame_event(now);   /* one LSR read per flip when idle */
     } else {
         last_sa = now;
         if (St.logging && U.head != U.tail) pump();
@@ -109,6 +142,7 @@ static uint32_t crtc_trap(uint32_t port, uint32_t val, uint32_t out)
 }
 
 static QEMM_IODT iodt[2] = { {0x3D4, crtc_trap}, {0x3D5, crtc_trap} };
+static QEMM_IODT iodt3da[1] = { {0x3DA, vsync_trap} };
 
 /* TSC rate from the BIOS tick count (0040:006C, 65536/1193182 s per tick): reads RAM only, never the PIT */
 static uint32_t tsc_calibrate(void)
@@ -137,7 +171,9 @@ static int find_resident(FLSTATE *out)
 
 static void usage(void)
 {
-    puts("FRAMELOG [/COM:n|hex[,baud]] [/AUTO]  - load the frame-time logger (default COM1,115200)\n"
+    puts("FRAMELOG [/COM:n|hex[,baud]] [/AUTO] [/3DA] - load the frame-time logger (default COM1,115200)\n"
+         "  /3DA[:ms]: frames = vertical retraces the game waits for (copy-to-screen games), costs CPU;\n"
+         "     ms = how long the game must be away from the retrace port for a new frame (default 6)\n"
          "FRAMELOG /STATUS                       - counters of the loaded copy\n"
          "Start/stop logging from the host PC (serial-bench: fllog.py). Needs HDPMI32i.");
 }
@@ -149,16 +185,21 @@ int main(int argc, char **argv)
         if (!strncasecmp(argv[i], "/COM:", 5)) com = argv[i] + 5;
         else if (!strcasecmp(argv[i], "/AUTO")) autostart = 1;
         else if (!strcasecmp(argv[i], "/STATUS")) status = 1;
+        else if (!strncasecmp(argv[i], "/3DA", 4) && (argv[i][4] == 0 || argv[i][4] == ':')) {
+            mode3da = 1; if (argv[i][4]) arm_ms = (uint32_t)atoi(argv[i] + 5);
+            if (arm_ms < 1 || arm_ms > 100) { usage(); return 1; }
+        }
         else { usage(); return 1; }
     }
     FLSTATE r;
     if (find_resident(&r)) {
         if (!status) { printf("FRAMELOG is already loaded (COM %lX). FRAMELOG /STATUS shows its counters.\n", (unsigned long)r.base); return 1; }
-        printf("FRAMELOG %s: UART %lX %lu baud, TSC %lu Hz, %s\n", FL_VER, (unsigned long)r.base, (unsigned long)r.baud,
-               (unsigned long)r.tsc_hz, r.logging ? "LOGGING" : "idle (waiting for the host's S)");
+        printf("FRAMELOG %s: UART %lX %lu baud, TSC %lu Hz, %s, %s\n", FL_VER, (unsigned long)r.base, (unsigned long)r.baud,
+               (unsigned long)r.tsc_hz, r.mode3da ? "/3DA vsync mode" : "page-flip mode", r.logging ? "LOGGING" : "idle (waiting for the host's S)");
         printf("  flips seen %lu, frames logged %lu, lost %lu, bytes sent %lu, record drops %lu, host bytes %lu, starts %lu, trap calls %lu\n",
                (unsigned long)r.flips, (unsigned long)r.frames, (unsigned long)r.lost, (unsigned long)r.sent,
                (unsigned long)r.txlost, (unsigned long)r.rx, (unsigned long)r.starts, (unsigned long)r.traps);
+        if (r.mode3da) printf("  3DAh reads trapped %lu\n", (unsigned long)r.traps3da);
         return 0;
     }
     if (status) { puts("FRAMELOG is not loaded."); return 1; }
@@ -175,6 +216,7 @@ int main(int argc, char **argv)
     St.magic = FL_MAGIC; St.base = base; St.baud = U.baud;
     St.tsc_hz = tsc_calibrate();
     St.merge_ticks = St.tsc_hz / 2000;           /* 0.5 ms */
+    St.arm_ticks = St.tsc_hz / 1000 * arm_ms;
     last_sa = 0;
 
     int sel, seg = __dpmi_allocate_dos_memory(1, &sel);
@@ -182,12 +224,14 @@ int main(int argc, char **argv)
     uint32_t blk = (uint32_t)seg << 4;
     unsigned long dsbase; __dpmi_get_segment_base_address(_my_ds(), &dsbase);
     if (!HDPMIPT_Install_IOPortTrap(0x3D4, 0x3D5, iodt, 2, &iopt)) { puts("FRAMELOG: port trap failed"); return 4; }
+    if (mode3da && !HDPMIPT_Install_IOPortTrap(0x3DA, 0x3DA, iodt3da, 1, &iopt3da)) { puts("FRAMELOG: 3DAh trap failed"); return 4; }
+    St.mode3da = mode3da;
     if (autostart) start_log(rdtsc());
     _farpokel(_dos_ds, blk, FL_MAGIC); _farpokel(_dos_ds, blk + 4, dsbase + (uint32_t)&St);
     _farpokew(_dos_ds, 0x4F0, seg); _farpokew(_dos_ds, 0x4F2, FL_SIG);
-    printf("FRAMELOG %s loaded: UART %X %lu baud%s, CPU %lu MHz, traps CRTC 3D4h-3D5h (protected-mode games)%s\n",
+    printf("FRAMELOG %s loaded: UART %X %lu baud%s, CPU %lu MHz, %s (protected-mode games)%s\n",
            FL_VER, base, (unsigned long)U.baud, U.fifo == 16 ? "" : " (no FIFO)", (unsigned long)(St.tsc_hz / 1000000),
-           autostart ? ", logging now" : "");
+           mode3da ? "frames = vsync waits (3DAh trapped, /3DA)" : "frames = page flips (CRTC 3D4h-3D5h)", autostart ? ", logging now" : "");
     fflush(stdout);
     DPMI_TSR();
     puts("FRAMELOG: going resident failed");

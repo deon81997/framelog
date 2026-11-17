@@ -1,5 +1,5 @@
 @ECHO OFF
-REM PERF.BAT none|idle|log - 1d on 86Box PII-450: SC55LOG speed, then SBEMU + SC-55 load (SBDIAG) during
+REM PERF.BAT none|idle|log|log3da [fast] [FLIPFLAGS FPS] - 1d on 86Box PII-450: SC55LOG speed, then SBEMU + SC-55 load (SBDIAG) during
 REM FLIP 30 s at 70 fps with MIDI. idle = FRAMELOG loaded, log = FRAMELOG /AUTO (logging, COM1 sending).
 C:
 CD \NUKEDSB
@@ -8,6 +8,7 @@ ECHO == perf %1 > C:\RESULT.LOG
 C:\HDPMI\HDPMI32I.EXE -r -x > NUL
 IF "%1"=="idle" C:\FRAMELOG.EXE > C:\FLOUT.TXT
 IF "%1"=="log" C:\FRAMELOG.EXE /AUTO > C:\FLOUT.TXT
+IF "%1"=="log3da" C:\FRAMELOG.EXE /AUTO /3DA > C:\FLOUT.TXT
 C:
 CD \SC55
 IF NOT "%2"=="fast" SC55LOG.EXE ROMS > C:\SC55LOG.OUT
@@ -15,7 +16,8 @@ CALL C:\SC55\SC55.BAT > C:\SBOUT.TXT
 C:
 CD \SC55
 SBDIAG START > NUL
-C:\FLIP.EXE 30 70 10 M > C:\FLIP.TXT
+IF "%3"=="" C:\FLIP.EXE 30 70 10 M > C:\FLIP.TXT
+IF NOT "%3"=="" C:\FLIP.EXE 30 %4 10 %3 > C:\FLIP.TXT
 SBDIAG > C:\SBD.TXT
 IF NOT "%1"=="none" C:\FRAMELOG.EXE /STATUS > C:\FLST.TXT
 ECHO DONE PASS >> C:\RESULT.LOG

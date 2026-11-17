@@ -35,6 +35,10 @@ A write to CRTC register 0Ch or 0Dh (start address high/low) through 3D4h/3D5h, 
 Writes closer than 0.5 ms to the previous start-address write belong to the same flip; the frame time is
 the first write of the burst.
 
+With `/3DA` (header modes bit 1): a frame is the first vertical-retrace start (3DAh bit 3, 0 -> 1) the game reads
+after it was away from 3DAh for at least 6 ms (`/3DA:ms`), i.e. one vsync wait = one frame even if it spans
+several retraces. CRTC writes then only pump the UART.
+
 ## Bandwidth
 
 `F` = 9 bytes on the wire = 90 bits: 115200 baud carries 1280 frames/s; 9600 baud carries 106.

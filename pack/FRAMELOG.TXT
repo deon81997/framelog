@@ -21,6 +21,8 @@ OPTIONS
   FRAMELOG /COM:n[,baud]    COM1-COM4 (default COM1,115200)
   FRAMELOG /COM:hex[,baud]  UART at a hex port address, e.g. /COM:2F8
   FRAMELOG /AUTO            start logging at once (no host S byte needed)
+  FRAMELOG /3DA[:ms]        frames = retrace waits, for games that copy
+                            to the screen (see WHICH GAMES; costs CPU)
   FRAMELOG /STATUS          counters of the loaded copy (flips, frames,
                             lost, bytes sent, host bytes, starts, traps)
 
@@ -46,19 +48,25 @@ LIMITS
     the host's byte only when the game flips a page.
   - Do not use the same COM port as SBEMU /DBG or serial MIDI.
 
-WHICH GAMES LOG (CRTC mode, tested in 86Box)
-  A frame is counted when the game flips pages (writes the VGA start
-  address). Games that draw straight into one screen page are NOT seen.
-  - Duke Nukem 3D 1.3D: works with ScreenMode = 0 in DUKE3D.CFG.
-    ScreenMode = 2 ("screen buffered") copies to the screen: no frames.
-  - Heretic 1.2: copies to the screen (mode 13h): no frames.
+WHICH GAMES LOG (tested in 86Box, Pentium II 450)
+  Default: a frame = a page flip (the game writes the VGA start address).
+  /3DA: a frame = a vertical retrace the game waits for (port 3DAh).
+  - Duke Nukem 3D 1.3D, ScreenMode = 0: works (default mode).
+  - Rise of the Triad 1.3: works (default mode).
+  - Duke ScreenMode = 2 and Heretic 1.2: copy to the screen without
+    waiting for the retrace each frame: no frames in either mode.
+    (Only a capture card or a later memory-watch mode can see them.)
   - Doom: flips pages in mode Y, expected to work (not tested yet).
-  - VESA modes (Duke 640x480 etc.) and copy-to-screen games need the
-    later /3DA and VESA modes.
-  If fllog.py never prints "header", the game did not flip a page yet.
+  - Copy-to-screen games that DO wait for the retrace: use /3DA.
+  If fllog.py never prints "header", the game did not flip a page (or,
+  with /3DA, wait for a retrace) yet.
 
 MEASURED COST
   About 0.35% of the game's CPU at 70 fps on a Pentium II 450.
+  /3DA traps every retrace-port read (3 million in 30 s for a game that
+  waits for vsync): the game keeps its frame rate and SBEMU/SC-55 load is
+  unchanged in tests, but its wait loops run slower - leave it off unless
+  the game does not flip pages.
   SBEMU / SC-55 load is unchanged (no IRQ0, PIT or keyboard hooks).
 
 TEST GAME

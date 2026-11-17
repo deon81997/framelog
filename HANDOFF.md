@@ -1,8 +1,26 @@
 # HANDOFF — FRAMELOG
 
-## RESUME HERE (2026-11-17, evening) - pre-hardware checks done, waiting for the user's hardware results
+## RESUME HERE (2026-11-17, late) - /3DA mode + ROTT done, waiting for hardware results (test2 zip)
 
-Test build: release/FRAMELOG-0.1-test1.zip on main (pack/mkzip.sh -test1; FRAMELOG.TXT has the hardware checklist).
+Test build: release/FRAMELOG-0.1-test2.zip (pack/mkzip.sh -test2), replaces test1.
+/3DA[:ms] (dos/framelog.c vsync_trap): traps 3DAh; frame = first retrace start the game reads after >= 6 ms away
+from 3DAh (one vsync wait = one frame even over 2+ retraces). CRTC trap then only pumps; pump also on every retrace edge.
+86Box PII-450 + SBEMU + SC-55:
+- FLIP V (render half a frame, wait 2 retraces): 3/5-refresh frames exactly (10% long), 0 lost.
+- With MIDI playing, 4 ms re-arm gave ~10% runt double counts (ISR 3.6 ms + trap time mid-wait); 6 ms: none -> default 6.
+- Cost (perf86.sh FAST=fast FLIPARGS="MV 35" none log3da): SBDIAG 61% / 0.0% lost both; FLIP frames 395 vs 394;
+  3.19M 3DAh traps in 30 s; FLIP spare loops 323M -> 113M (its wait loop is slower: every poll trapped). Opt-in.
+- ROTT 1.3 (SOUND.ROT written by game86.sh: Version 13, FXMode 2, MusicMode 8, NumBits 8; 16-bit FX failed on DMA):
+  page flips, 1073 frames, ~30 fps demo with regular ~65 ms hitches (not investigated).
+- Heretic /3DA: 20 retrace waits in 41 s; Duke ScreenMode 2 /3DA: 65 in 52 s -> these copy-to-screen games neither
+  flip nor vsync per frame: no port trap sees them. Options: capture card analyzer (milestone 4) or a memory-watch
+  research item (DPMI 0B00h debug watchpoint on A0000h is per-client in HDPMI -> probably needs HDPMI/ring-0 help).
+
+Next 3 steps: hardware results -> fixes; VESA 4F07h hook; /RM (JEMM/QEMM, qemm.c from SBEMU).
+
+## 2026-11-17 evening - pre-hardware checks done, waiting for the user's hardware results
+
+Test build (superseded by test2): FRAMELOG-0.1-test1.zip (pack/mkzip.sh -test1; FRAMELOG.TXT has the hardware checklist).
 Tags/releases are refused here (403): the zip on main is the download.
 Real games on 86Box PII-450 + SBEMU + SC-55 (dos/testrig/game86.sh, COM1 -> socat pty -> fllog.py):
 - FLIP 40 s: 1839/1839 frames through 86Box's real UART timing, 0 junk, stop marker received.

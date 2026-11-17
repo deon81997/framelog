@@ -12,5 +12,6 @@ typedef struct {
     uint32_t base, baud, tsc_hz, merge_ticks;
     volatile uint32_t logging, starts;
     volatile uint32_t traps, flips, frames, lost, sent, txlost, rx;
+    uint32_t mode3da, arm_ticks; volatile uint32_t traps3da;
 } FLSTATE;
 #endif
