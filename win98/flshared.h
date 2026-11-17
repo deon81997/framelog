@@ -49,9 +49,9 @@ typedef struct {
     void **vtslot[FL_MAXSLOT];   /* address of the vtable entry */
     void *orig[FL_MAXSLOT];      /* original method */
     unsigned char stub[FL_MAXSLOT][FL_STUB];
-    unsigned char inj[64];       /* /INJECT entry-point stub (launch mode) */
+    unsigned char inj[80];       /* /INJECT entry-point stub (launch mode) */
     unsigned char injsave[16];   /* original entry bytes */
-    DWORD injentry, injlen;
+    DWORD injentry, injlen, injold;
 
     FLPROC procs[FL_MAXPROC];
     volatile LONG dllcount;

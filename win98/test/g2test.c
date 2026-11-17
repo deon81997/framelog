@@ -1,11 +1,12 @@
-/* G2TEST.EXE [N] [FPS] - Glide 2: grSstWinOpen 640x480, grBufferClear + grBufferSwap(1), N frames at FPS.
+/* G2TEST.EXE [nowin] [N] [FPS] - Glide 2 (nowin: no window, no message loop - only FRAMELOG's launch mode sees it): grSstWinOpen 640x480, grBufferClear + grBufferSwap(1), N frames at FPS.
    Loads glide2x.dll at run time (real 3dfx driver, or test/fakeglide.c's stand-in). */
 #include "tpace.h"
 
 int WINAPI WinMain(HINSTANCE hi, HINSTANCE hp, LPSTR cmd, int show)
 {
     HMODULE g = LoadLibraryA("glide2x.dll");
-    HWND w;
+    HWND w = NULL;
+    int nowin = strstr(cmd, "nowin") != NULL;
     int i;
     void(WINAPI * init)(void), (WINAPI * shut)(void), (WINAPI * swap)(DWORD), (WINAPI * clr)(DWORD, DWORD, DWORD);
     int(WINAPI * qh)(void *), (WINAPI * open)(DWORD, int, int, int, int, int, int);
@@ -22,7 +23,7 @@ int WINAPI WinMain(HINSTANCE hi, HINSTANCE hp, LPSTR cmd, int show)
     sel = (void *)GetProcAddress(g, "_grSstSelect@4");
     open = (void *)GetProcAddress(g, "_grSstWinOpen@28");
     if (!init || !swap || !open || !qh || !sel || !clr || !shut) { tp_log("g2test: missing exports"); return 1; }
-    w = tp_window("G2TEST", 1, 640, 480);
+    if (!nowin) w = tp_window("G2TEST", 1, 640, 480);
     init();
     if (!qh(hw)) { tp_log("g2test: no 3dfx hardware"); return 1; }
     sel(0);
@@ -32,13 +33,13 @@ int WINAPI WinMain(HINSTANCE hi, HINSTANCE hp, LPSTR cmd, int show)
     }
     tp_start();
     for (i = 0; i < tp_n; i++) {
-        tp_pump();
+        if (!nowin) tp_pump();
         clr(0x00FF0000u + (i & 255), 0, 0xFFFF);
         swap(1);
         tp_wait();
     }
     shut();
     tp_log("g2test frames %d fps %d spare %lu", tp_n, tp_fps, tp_spare);
-    DestroyWindow(w);
+    if (w) DestroyWindow(w);
     return 0;
 }

@@ -401,9 +401,40 @@ static void *const glwt[MAXGL] = {glw0, glw1, glw2};
 static BOOL WINAPI gdiw(HDC dc) { return gl_common(-1, dc, FL_API_GDI); }
 
 /* IAT patch: every private module importing gdi32!SwapBuffers */
-#define MAXIAT 16
+#define MAXIAT 48
 static void **iat[MAXIAT];
+static void *iat_old[MAXIAT];
 static int niat;
+
+static void try_module(HMODULE m);
+static void scan(int full);
+static HMODULE(WINAPI *k32_lla)(LPCSTR);
+static HMODULE(WINAPI *k32_llxa)(LPCSTR, HANDLE, DWORD);
+
+/* games that LoadLibrary their renderer (Quake 2 ref_gl -> opengl32 / 3dfxgl) get hooked right away */
+static HMODULE WINAPI llaw(LPCSTR n)
+{
+    HMODULE m = k32_lla(n);
+    if (m && shm && !shm->quitting) { try_module(m); scan(0); }
+    return m;
+}
+static HMODULE WINAPI llxaw(LPCSTR n, HANDLE f, DWORD fl)
+{
+    HMODULE m = k32_llxa(n, f, fl);
+    if (m && shm && !shm->quitting && !(fl & LOAD_LIBRARY_AS_DATAFILE)) { try_module(m); scan(0); }
+    return m;
+}
+
+static void iat_set(void **t, void *v)
+{
+    DWORD old;
+    if (niat < MAXIAT && VirtualProtect(t, 4, PAGE_READWRITE, &old)) {
+        iat_old[niat] = *t;
+        *t = v;
+        VirtualProtect(t, 4, old, &old);
+        iat[niat++] = t;
+    }
+}
 
 static void iat_patch(HMODULE m)
 {
@@ -411,22 +442,19 @@ static void iat_patch(HMODULE m)
     IMAGE_DOS_HEADER *dh = (IMAGE_DOS_HEADER *)b;
     IMAGE_NT_HEADERS *nh;
     IMAGE_IMPORT_DESCRIPTOR *id;
-    DWORD rva, old;
+    DWORD rva;
     void **t;
     if ((DWORD)b >= 0x80000000u || dh->e_magic != IMAGE_DOS_SIGNATURE) return;
     nh = (IMAGE_NT_HEADERS *)(b + dh->e_lfanew);
     rva = nh->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress;
     if (!rva) return;
     for (id = (IMAGE_IMPORT_DESCRIPTOR *)(b + rva); id->Name; id++) {
-        if (lstrcmpiA((char *)(b + id->Name), "gdi32.dll")) continue;
+        int gdi = !lstrcmpiA((char *)(b + id->Name), "gdi32.dll"), k32 = !lstrcmpiA((char *)(b + id->Name), "kernel32.dll");
+        if (!gdi && !k32) continue;
         for (t = (void **)(b + id->FirstThunk); *t; t++) {
-            if (*t != (void *)gdiswap || niat >= MAXIAT) continue;
-            if (VirtualProtect(t, 4, PAGE_READWRITE, &old)) {
-                *t = (void *)gdiw;
-                VirtualProtect(t, 4, old, &old);
-                iat[niat++] = t;
-                diag("%08lX: IAT SwapBuffers %p", g_pid, t);
-            }
+            if (gdi && gdiswap && *t == (void *)gdiswap) { iat_set(t, (void *)gdiw); diag("%08lX: IAT SwapBuffers %p", g_pid, t); }
+            else if (k32 && k32_lla && *t == (void *)k32_lla) iat_set(t, (void *)llaw);
+            else if (k32 && k32_llxa && *t == (void *)k32_llxa) iat_set(t, (void *)llxaw);
         }
     }
 }
@@ -437,7 +465,7 @@ static void iat_restore_all(void)
     int i;
     for (i = 0; i < niat; i++)
         if (VirtualProtect(iat[i], 4, PAGE_READWRITE, &old)) {
-            *iat[i] = (void *)gdiswap;
+            *iat[i] = iat_old[i];
             VirtualProtect(iat[i], 4, old, &old);
         }
     niat = 0;
@@ -463,7 +491,7 @@ static void try_module(HMODULE m)
                     break;
                 }
     }
-    if (gdiswap) iat_patch(m);
+    iat_patch(m);
 }
 
 static void scan(int full)
@@ -559,6 +587,8 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD why, LPVOID res)
         g_pid = GetCurrentProcessId();
         g_key = fl_proc_key();
         gdiswap = (BOOL(WINAPI *)(HDC))GetProcAddress(GetModuleHandleA("gdi32.dll"), "SwapBuffers");
+        k32_lla = (void *)GetProcAddress(GetModuleHandleA("kernel32.dll"), "LoadLibraryA");
+        k32_llxa = (void *)GetProcAddress(GetModuleHandleA("kernel32.dll"), "LoadLibraryExA");
         for (i = 0; i < FL_MAXSLOT; i++) g_jt[i] = (i < (int)shm->nslots && shm->kind[i] == FL_KIND_BLT) ? bwt[i] : fwt[i];
         InterlockedIncrement((LONG *)&shm->dllcount);
         if (g_pid != shm->loader_pid)
@@ -576,6 +606,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD why, LPVOID res)
         }
         dd_fix();
         g_lastscan = GetTickCount();
+        iat_patch(GetModuleHandleA(NULL));
         scan(0); /* names only: no Toolhelp inside DllMain */
     } else if (why == DLL_PROCESS_DETACH && shm) {
         if (g_slot >= 0) shm->procs[g_slot].key = 0;

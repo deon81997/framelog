@@ -1,0 +1,4 @@
+@echo off
+start /w D:\FRAMELOG.EXE /COM:1 /LOG /Q D:\G2TEST.EXE nowin 150 50
+copy D:\FRAMELOG.LOG D:\FL1.LOG > nul
+C:\WINDOWS\RUNDLL32.EXE USER.EXE,ExitWindows

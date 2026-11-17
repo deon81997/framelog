@@ -267,7 +267,7 @@ static void inject(PROCESS_INFORMATION *pi, DWORD entry)
     unsigned char *s = shm->inj, jmp[5];
     DWORD n = 0;
     FARPROC ll = GetProcAddress(GetModuleHandleA("kernel32.dll"), "LoadLibraryA");
-    FARPROC wpm = GetProcAddress(GetModuleHandleA("kernel32.dll"), "WriteProcessMemory");
+    FARPROC vp = GetProcAddress(GetModuleHandleA("kernel32.dll"), "VirtualProtect");
     int i = 0;
     if (!entry || !ReadProcessMemory(pi->hProcess, (void *)entry, shm->injsave, 5, &n) || n != 5) {
         say("inject: can't read the entry point (%lu), using the hooks only", GetLastError());
@@ -278,13 +278,16 @@ static void inject(PROCESS_INFORMATION *pi, DWORD entry)
     s[i++] = 0x68; put32(s + i, (DWORD)shm->dllpath); i += 4;           /* push dllpath */
     s[i++] = 0xB8; put32(s + i, (DWORD)ll); i += 4;                     /* mov eax, LoadLibraryA */
     s[i++] = 0xFF; s[i++] = 0xD0;                                         /* call eax */
-    s[i++] = 0x6A; s[i++] = 0x00;                                         /* push 0 */
+    s[i++] = 0x68; put32(s + i, (DWORD)&shm->injold); i += 4;           /* push &old */
+    s[i++] = 0x6A; s[i++] = 0x40;                                         /* push PAGE_EXECUTE_READWRITE */
     s[i++] = 0x6A; s[i++] = 0x05;                                         /* push 5 */
-    s[i++] = 0x68; put32(s + i, (DWORD)shm->injsave); i += 4;           /* push saved bytes */
     s[i++] = 0x68; put32(s + i, entry); i += 4;                         /* push entry */
-    s[i++] = 0x6A; s[i++] = 0xFF;                                         /* push -1 (this process) */
-    s[i++] = 0xB8; put32(s + i, (DWORD)wpm); i += 4;                    /* mov eax, WriteProcessMemory */
+    s[i++] = 0xB8; put32(s + i, (DWORD)vp); i += 4;                     /* mov eax, VirtualProtect */
     s[i++] = 0xFF; s[i++] = 0xD0;                                         /* call eax */
+    s[i++] = 0xBE; put32(s + i, (DWORD)shm->injsave); i += 4;           /* mov esi, saved bytes */
+    s[i++] = 0xBF; put32(s + i, entry); i += 4;                         /* mov edi, entry */
+    s[i++] = 0xB9; put32(s + i, 5); i += 4;                             /* mov ecx, 5 */
+    s[i++] = 0xFC; s[i++] = 0xF3; s[i++] = 0xA4;                         /* cld, rep movsb */
     s[i++] = 0x9D; s[i++] = 0x61;                                         /* popfd, popad */
     s[i++] = 0x68; put32(s + i, entry); i += 4;                         /* push entry */
     s[i++] = 0xC3;                                                        /* ret */
