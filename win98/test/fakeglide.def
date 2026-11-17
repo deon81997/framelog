@@ -1,0 +1,12 @@
+LIBRARY glide2x.dll
+EXPORTS
+_grGlideInit@0=grGlideInit@0
+_grGlideShutdown@0=grGlideShutdown@0
+_grGlideGetVersion@4=grGlideGetVersion@4
+_grSstQueryHardware@4=grSstQueryHardware@4
+_grSstSelect@4=grSstSelect@4
+_grSstWinOpen@28=grSstWinOpen@28
+_grSstScreenWidth@0=grSstScreenWidth@0
+_grSstScreenHeight@0=grSstScreenHeight@0
+_grBufferClear@12=grBufferClear@12
+_grBufferSwap@4=grBufferSwap@4
