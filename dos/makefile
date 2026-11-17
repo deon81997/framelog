@@ -1,7 +1,7 @@
 # FRAMELOG DOS side (DJGPP gcc 12.2: andrewwutw/build-djgpp v3.4, export PATH=<djgpp>/bin:$PATH)
 CC := i586-pc-msdosdjgpp-gcc
 CFLAGS := -fcommon -O2 -march=pentium -Wall -Ilib -D__DOS__ -DNDEBUG $(if $(VESADBG),-DVESADBG)   # make VESADBG=1: INT 10h VBE calls as text on the UART
-LIBSRC := lib/qemm.c lib/hdpmipt.c lib/untrapio.c lib/pic.c lib/serial.c lib/dpmi/dpmi.c lib/dpmi/dpmi_dj2.c lib/dpmi/dpmi_tsr.c lib/dpmi/xms.c lib/dpmi/dbgutil.c
+LIBSRC := lib/hdpmipt.c lib/untrapio.c lib/pic.c lib/serial.c lib/dpmi/dpmi.c lib/dpmi/dpmi_dj2.c lib/dpmi/dpmi_tsr.c lib/dpmi/xms.c lib/dpmi/dbgutil.c
 all: output/framelog.exe output/flip.exe output/rmflip.com output/fltsr.exe output/fltest.exe
 output/framelog.exe: framelog.c flstate.h vesastub.h lib/uart.h $(LIBSRC)
 	@mkdir -p output

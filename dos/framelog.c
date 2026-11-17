@@ -1,11 +1,10 @@
 /* FRAMELOG.EXE - DOS frame-time logger TSR (DJGPP, resident under HDPMI32i, coexists with NUKED SB-EMU).
  *
- *   FRAMELOG [/COM:n|hex[,baud]] [/AUTO] [/3DA[:ms]] [/NOVESA] [/RM]   load (default COM1, 115200); /AUTO = log from now, no host byte
+ *   FRAMELOG [/COM:n|hex[,baud]] [/AUTO] [/3DA[:ms]] [/NOVESA]   load (default COM1, 115200); /AUTO = log from now, no host byte
  *       needed; /3DA = frames are the vertical retraces the game waits for (input status 3DAh polled), for games
  *       that copy to the screen instead of flipping pages. Opt-in: every 3DAh read is trapped (costly in vsync loops).
  *       VESA: INT 10h 4F07h (set display start, BL 00h/80h/02h/82h) = a page flip too (real-mode INT 10h vector,
  *       which DOS extenders reflect protected-mode INT 10h to); /NOVESA leaves INT 10h alone.
- *       /RM: also trap real-mode (V86) programs through QEMM's QPI (QEMM 7.03+, or JEMM + JLOAD QPIEMU.DLL).
  *   FRAMELOG /STATUS                        print the resident copy's counters
  *
  * Traps CRTC 3D4h/3D5h (protected-mode programs, HDPMI port trap). A write to start-address register 0Ch/0Dh =
@@ -35,7 +34,7 @@ static uint8_t last3da;              /* last 3DAh value the game read */
 static uint64_t last3da_t;           /* TSC of the game's previous 3DAh read */
 static int armed3da = 1;             /* a new wait started (the game was away from 3DAh for arm_ticks) */
 static uint32_t arm_ms = 6;
-static QEMM_IOPT iopt3da, iopt_rm, iopt3da_rm;
+static QEMM_IOPT iopt3da;
 static uint64_t ring[FL_RINGN];      /* flip timestamps, written by the trap, drained by the pump */
 static volatile uint32_t rhead, rtail;
 static uint64_t prev_frame;          /* TSC of the previous frame sent (or of the begin marker) */
@@ -56,7 +55,7 @@ static void put_rec(uint8_t type, const void *p, int n)
 
 static void start_log(uint64_t now)
 {
-    struct __attribute__((packed)) { uint8_t ver, src; uint32_t hz; uint8_t modes, res; } h = { 1, 0, St.tsc_hz, (mode3da ? 2 : 1) | (St.vesa ? 4 : 0) | (St.rm ? 8 : 0), 0 };
+    struct __attribute__((packed)) { uint8_t ver, src; uint32_t hz; uint8_t modes, res; } h = { 1, 0, St.tsc_hz, (mode3da ? 2 : 1) | (St.vesa ? 4 : 0), 0 };
     put_rec('H', &h, 8);
     put_rec('B', &now, 8);
     prev_frame = now; St.frames = 0; St.lost = 0; lost_pending = 0;
@@ -114,7 +113,6 @@ static void frame_event(uint64_t now)
 static uint32_t vsync_trap(uint32_t port, uint32_t val, uint32_t out)
 {
     St.traps3da++;
-    if (!(QEMM_TrapFlags & QEMM_TF_PM)) St.traps_rm++;
     if (out) { HDPMIPT_UntrappedIO_Write((uint16_t)port, (uint8_t)val); return val; }
     uint8_t v = HDPMIPT_UntrappedIO_Read((uint16_t)port);
     uint64_t now = rdtsc();
@@ -132,7 +130,6 @@ static uint32_t crtc_trap(uint32_t port, uint32_t val, uint32_t out)
     /* HDPMI: OUT DX,AX = two byte calls, the 3D5h half taken from our return >> 8 -> return EAX unchanged;
      * byte calls carry stale EAX upper bits -> AL only. See HANDOFF 1a. */
     St.traps++;
-    if (!(QEMM_TrapFlags & QEMM_TF_PM)) St.traps_rm++;
     if (!out) {
         uint8_t v = HDPMIPT_UntrappedIO_Read((uint16_t)port);
         if (port == 0x3D4 && (val >> 16) == FL_PMMAGIC && St.vesa) vesa_flip();   /* VBE PM SetDisplayStart thunk */
@@ -233,10 +230,9 @@ static int find_resident(FLSTATE *out)
 
 static void usage(void)
 {
-    puts("FRAMELOG [/COM:n|hex[,baud]] [/AUTO] [/3DA] [/NOVESA] [/RM] - load the frame-time logger (default COM1,115200)\n"
+    puts("FRAMELOG [/COM:n|hex[,baud]] [/AUTO] [/3DA] [/NOVESA] - load the frame-time logger (default COM1,115200)\n"
          "  /3DA[:ms]: frames = vertical retraces the game waits for (copy-to-screen games), costs CPU;\n"
          "     ms = how long the game must be away from the retrace port for a new frame (default 6)\n"
-         "  /RM: real-mode games too (needs QEMM, or JEMM + JLOAD QPIEMU.DLL)\n"
          "  /NOVESA: don't hook INT 10h (VESA 4F07h display-start calls are page flips by default)\n"
          "FRAMELOG /STATUS                       - counters of the loaded copy\n"
          "Start/stop logging from the host PC (serial-bench: fllog.py). Needs HDPMI32i.");
@@ -244,13 +240,12 @@ static void usage(void)
 
 int main(int argc, char **argv)
 {
-    const char *com = "COM1"; int autostart = 0, status = 0, novesa = 0, rm = 0;
+    const char *com = "COM1"; int autostart = 0, status = 0, novesa = 0;
     for (int i = 1; i < argc; i++) {
         if (!strncasecmp(argv[i], "/COM:", 5)) com = argv[i] + 5;
         else if (!strcasecmp(argv[i], "/AUTO")) autostart = 1;
         else if (!strcasecmp(argv[i], "/STATUS")) status = 1;
         else if (!strcasecmp(argv[i], "/NOVESA")) novesa = 1;
-        else if (!strcasecmp(argv[i], "/RM")) rm = 1;
         else if (!strncasecmp(argv[i], "/3DA", 4) && (argv[i][4] == 0 || argv[i][4] == ':')) {
             mode3da = 1; if (argv[i][4]) arm_ms = (uint32_t)atoi(argv[i] + 5);
             if (arm_ms < 1 || arm_ms > 100) { usage(); return 1; }
@@ -266,7 +261,6 @@ int main(int argc, char **argv)
                (unsigned long)r.flips, (unsigned long)r.frames, (unsigned long)r.lost, (unsigned long)r.sent,
                (unsigned long)r.txlost, (unsigned long)r.rx, (unsigned long)r.starts, (unsigned long)r.traps);
         if (r.mode3da) printf("  3DAh reads trapped %lu\n", (unsigned long)r.traps3da);
-        if (r.rm) printf("  /RM: real-mode trap calls %lu\n", (unsigned long)r.traps_rm);
         printf("  VESA hook %s: display-start calls %lu (INT 10h 4F07h + VBE 2.0 PM interface), PM interface requests %lu (%lu not patched)\n",
                r.vesa ? "on" : "off (/NOVESA)", (unsigned long)r.vesa_calls, (unsigned long)r.vbepm, (unsigned long)r.vbepm_skip);
         return 0;
@@ -279,7 +273,6 @@ int main(int argc, char **argv)
     if (!base) { printf("FRAMELOG: COM%d has no port address in the BIOS data area\n", c); return 2; }
     DPMI_Init();
     if (!HDPMIPT_Detect()) { puts("FRAMELOG: needs HDPMI32i (HDPMI32I.EXE -r -x); not loaded."); return 2; }
-    if (rm && QEMM_GetVersion() < 0x0703) { puts("FRAMELOG /RM: needs QEMM 7.03+ or JEMM + QPIEMU (JLOAD QPIEMU.DLL); not loaded."); return 2; }
     if (uart_init(&U, base, baud, 1) < 0) { printf("FRAMELOG: no UART at %X\n", base); return 2; }
 
     memset(&St, 0, sizeof St);
@@ -298,12 +291,6 @@ int main(int argc, char **argv)
     if (!HDPMIPT_Install_IOPortTrap(0x3D4, 0x3D5, iodt, 2, &iopt)) { puts("FRAMELOG: port trap failed"); return 4; }
     if (mode3da && !HDPMIPT_Install_IOPortTrap(0x3DA, 0x3DA, iodt3da, 1, &iopt3da)) { puts("FRAMELOG: 3DAh trap failed"); return 4; }
     St.mode3da = mode3da;
-    QEMM_TrapFlags = QEMM_TF_PM;     /* hdpmipt.c sets it per PM trap call, qemm.c clears it per V86 (/RM) call */
-    if (rm) {
-        if (!QEMM_Install_IOPortTrap(iodt, 2, &iopt_rm) || (mode3da && !QEMM_Install_IOPortTrap(iodt3da, 1, &iopt3da_rm)))
-            { puts("FRAMELOG /RM: QPI port trap failed"); return 4; }
-        St.rm = 1;
-    }
     if (!novesa) {
         uint32_t cb = DPMI_AllocateRMCB_RETF(vesa_cb, &vesa_reg), cb2 = DPMI_AllocateRMCB_RETF(vbepm_cb, &vbepm_reg);
         if (!cb || !cb2) { puts("FRAMELOG: no real-mode callback for the VESA hook (try /NOVESA)"); return 4; }
@@ -320,10 +307,9 @@ int main(int argc, char **argv)
     if (autostart) start_log(rdtsc());
     _farpokel(_dos_ds, blk, FL_MAGIC); _farpokel(_dos_ds, blk + 4, dsbase + (uint32_t)&St);
     _farpokew(_dos_ds, 0x4F0, seg); _farpokew(_dos_ds, 0x4F2, FL_SIG);
-    printf("FRAMELOG %s loaded: UART %X %lu baud%s, CPU %lu MHz, %s (%s games)%s%s\n",
+    printf("FRAMELOG %s loaded: UART %X %lu baud%s, CPU %lu MHz, %s (protected-mode games)%s%s\n",
            FL_VER, base, (unsigned long)U.baud, U.fifo == 16 ? "" : " (no FIFO)", (unsigned long)(St.tsc_hz / 1000000),
-           mode3da ? "frames = vsync waits (3DAh trapped, /3DA)" : "frames = page flips (CRTC 3D4h-3D5h)",
-           St.rm ? "protected- and real-mode" : "protected-mode", St.vesa ? ", VESA 4F07h" : "", autostart ? ", logging now" : "");
+           mode3da ? "frames = vsync waits (3DAh trapped, /3DA)" : "frames = page flips (CRTC 3D4h-3D5h)", St.vesa ? ", VESA 4F07h" : "", autostart ? ", logging now" : "");
     fflush(stdout);
     DPMI_TSR();
     puts("FRAMELOG: going resident failed");

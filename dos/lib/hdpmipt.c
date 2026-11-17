@@ -21,7 +21,7 @@ typedef struct
 
 extern uint32_t __djgpp_stack_top;
 
-extern int QEMM_TrapFlags;   /* defined in qemm.c (/RM) */
+int QEMM_TrapFlags; /* FRAMELOG: qemm.c not linked until /RM (wip/rm-2026-11-17) */
 static const char* VENDOR_HDPMI = "HDPMI";    //vendor string
 static HDPMIPT_ENTRY HDPMIPT_Entry;
 #if HDPMIPT_SWITCH_STACK

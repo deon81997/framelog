@@ -48,7 +48,20 @@ Restore: DJGPP (curl github.com/andrewwutw/build-djgpp/releases/download/v3.4/dj
 store-personal (dos/testrig/README.md). apt: qemu-system-x86 zstd mtools socat xvfb xdotool openbox imagemagick
 librtmidi6; pip: pyserial matplotlib. One VM rig at a time (2 cores).
 
-## 2026-11-17 night - VESA hook done; /RM + milestone-2 checkpoint in progress (user-asked chat, dos/ only)
+## 2026-11-17 night - VESA hook DONE + checked, test3 zip; /RM parked on wip/rm-2026-11-17
+
+Build: release/FRAMELOG-0.1-test3.zip (pack/mkzip.sh -test3; replaces test2). FRAMELOG.TXT: VESA section, /NOVESA,
+Duke VESA line, FLIP B, VESA hardware checklist items.
+Cost, 86Box PII-450 + SBEMU + SC-55, FLIP 30 s 70 fps flipping via INT 10h 4F07h + MIDI (FLIPARGS="MB 70" perf86.sh):
+none / idle / log = spare loops 456.85M / 457.61M / 456.46M (-0.09% = noise), SBDIAG 59% / 0.0% lost / 3.5-3.6 ms
+in all three, SC55LOG 0.48x, 1910/1910 frames, 0 drops. VESA stays on by default. Duke VESA with/without A/B not run
+(user: only if quick); its 596-frame run is below.
+/RM: parked (user 11/17) on wip/rm-2026-11-17 (dos/RM-WIP.md): QPI traps fire from V86 (2282 calls) but OUT 3D4h,AX
+loses the data byte (one QPI callback per word, qemm.c passes AL only) -> only half the RMFLIP frames count. Removed
+from main (qemm.c not linked; FLSTATE keeps 2 reserved words). RMFLIP.COM (tools/rmflip.asm) stays on main.
+Next 3 steps: user's hardware results with test3; then the priorities in the RESUME section above (Win98 hook DLL);
+/RM from the wip branch last.
+
 
 VESA hook (default on, /NOVESA; header modes bit 2): INT 10h 4F07h via RM stub + RMCB (QEMU FLIP B: 836/836 calls,
 e2e PASS with SBEMU) AND the VBE 2.0 PM interface (4F0Ah). Correction to the design above: Duke 3D VESA 640x480 on
