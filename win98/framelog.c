@@ -459,7 +459,11 @@ static void drain(void)
         if (state == ARMED) {
             if (!shm->meta_ready) {
                 if (!armed_wait) armed_wait = GetTickCount();
-                if (GetTickCount() - armed_wait < 500) break; /* owner still filling meta */
+                /* owner still filling meta: a process's first DirectDraw GetDeviceIdentifier can take > 0.5 s
+                   on Win98 (86Box: the first DDraw game of a session lost its gpu/driver keys); the ring holds
+                   4096 frames with their own TSC stamps, so waiting costs no frames */
+                if (GetTickCount() - armed_wait < 3000) break;
+                say("meta not complete after 3 s, sending what there is");
             }
             begin(e->tsc);
         } else if (state == LOGGING) frame_ev(e->tsc);

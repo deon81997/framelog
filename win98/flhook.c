@@ -149,6 +149,7 @@ static void dd_meta(void *s)
     DDSURFACEDESC sd;
     void **vt = *(void ***)s;
     void *s2 = NULL, *dd = NULL, *dd4 = NULL;
+    HRESULT hr = DD_OK;
     /* GetSurfaceDesc = slot 22 in Surface1..3 (DDSURFACEDESC); Surface4/7 take DDSURFACEDESC2 - use a v1 surface */
     if (((QIFn)vt[0])(s, &IID_IDirectDrawSurface, &s2) == DD_OK && s2) {
         void **v2 = *(void ***)s2;
@@ -160,17 +161,18 @@ static void dd_meta(void *s)
         s2 = NULL;
     }
     /* GetDDInterface (Surface2+ slot 36) -> IDirectDraw4 -> GetDeviceIdentifier */
-    if (((QIFn)vt[0])(s, &IID_IDirectDrawSurface2, &s2) == DD_OK && s2) {
+    if ((hr = ((QIFn)vt[0])(s, &IID_IDirectDrawSurface2, &s2)) == DD_OK && s2) {
         void **v2 = *(void ***)s2;
-        if (((HRESULT(WINAPI *)(void *, void **))v2[36])(s2, &dd) == DD_OK && dd) {
+        if ((hr = ((HRESULT(WINAPI *)(void *, void **))v2[36])(s2, &dd)) == DD_OK && dd) {
             void **vd = *(void ***)dd;
-            if (((QIFn)vd[0])(dd, &IID_IDirectDraw4, &dd4) == DD_OK && dd4) {
+            if ((hr = ((QIFn)vd[0])(dd, &IID_IDirectDraw4, &dd4)) == DD_OK && dd4) {
                 DDDEVICEIDENTIFIER id;
                 char b[96];
                 void **v4 = *(void ***)dd4;
                 memset(&id, 0, sizeof id);
                 /* IDirectDraw4::GetDeviceIdentifier = slot 27 */
-                if (((HRESULT(WINAPI *)(void *, DDDEVICEIDENTIFIER *, DWORD))v4[27])(dd4, &id, 0) == DD_OK) {
+                if ((hr = ((HRESULT(WINAPI *)(void *, DDDEVICEIDENTIFIER *, DWORD))v4[27])(dd4, &id, 0)) == DD_OK) {
+                    if (!id.szDescription[0]) diag("%08lX: ddraw gpu name empty (driver %.40s)", g_pid, id.szDriver);
                     meta_add("gpu", id.szDescription);
                     if (id.szDriver[0] || id.liDriverVersion.QuadPart) sprintf(b, "%.60s %u.%u.%u.%u", id.szDriver, HIWORD(id.liDriverVersion.HighPart),
                             LOWORD(id.liDriverVersion.HighPart), HIWORD(id.liDriverVersion.LowPart),
@@ -184,6 +186,7 @@ static void dd_meta(void *s)
         }
         ((RelFn)v2[2])(s2);
     }
+    if (hr != DD_OK) diag("%08lX: ddraw gpu name: step failed hr %08lX (s2 %p dd %p dd4 %p)", g_pid, hr, s2, dd, dd4);
     meta_done();
 }
 
