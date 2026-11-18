@@ -128,7 +128,7 @@ lamp is on QUIT CARMAGEDDON, Return x2):
 
 | Game | /STATUS | Log |
 | --- | --- | --- |
-| Carmageddon Splat Pack demo | patched in 1 (3 files scanned), grBufferSwap 6932 = flips 6932, 0 lost | 6931 frames (the last record is still in the ring when the game quits); race 41-52 fps (17 ms), menus 29.5 fps |
+| Carmageddon Splat Pack demo | patched in 1 (3 files scanned), grBufferSwap 6887 = frames 6887, 0 lost | race 41-52 fps (17 ms), menus 29.5 fps; fixture serial-bench 86box-v1-dosglide/carmageddon-demo.csv |
 | Extreme Assault 1.1.1 demo | OVL 1, static scanned 1, patched 0; 4149 = 4149, 0 lost | exact |
 | Archimedean Dynasty demo | OVL 1, static scanned 1, patched 0; 14307 = 14307, 0 lost | exact |
 
@@ -136,7 +136,7 @@ Cost (86Box PII-450, Archimedean Dynasty mission, fps 5-55 s after the mission s
 static, alternating old/new x3): old 151.0 / 157.8 / 148.8, new 155.4 / 153.4 / 147.4 -> mean 152.5 vs 152.1 (-0.3 %,
 runs spread +-3 %): within noise. Runtime path = the OVL thunk (measured -0.07 % before); the stub only adds compares
 after a successful open. Load time: the scan, once per EXE/BDD opened by the game: 178 ms for FIGHT3.EXE (1.28 MB),
-@@CARMSCAN@@ (/STATUS "scan time").
+322 ms for Carmageddon's 3 EXE/BDD opens (CARM3DFX.EXE 1.3 MB, 3DFX_DOS.BDD 0.3 MB, one more) (/STATUS "scan time").
 
 ## Open
 

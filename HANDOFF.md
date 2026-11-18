@@ -1,5 +1,28 @@
 # HANDOFF — FRAMELOG
 
+## 2026-11-18 Static Glide (Carmageddon): grBufferSwap by signature in the EXE/BDD reads - works on 86Box Voodoo Graphics
+
+Done: glide/glstatic.c (+ .h; #included by glhook.c): the stub also reports opens of *.EXE / *.BDD by a PM program;
+gs_parse scans the file (load time only) for Glide 2.x SST-1 grBufferSwap = the P6-fenced swapbufferCMD write
+`87 05 .. 89 /r 28 01 00 00 87 05`, nearest prologue `53 56 57 55 8B 5C 24 14` <= 180h before, `5D 5F 5E 5B C2 04 00`
+<= 40h after; one hit, no PE reloc / LE fixup in the 8 bytes -> same FF 15 thunk as the OVL. Carmageddon's Glide 2.11
+lives in 3DFX_DOS.BDD (PE BRender driver, read with plain DOS reads, file 0x53BC). gl_flip no longer merges swaps
+< 0.5 ms apart (Carmageddon swaps twice at screen changes: 5790 vs 5782). Stub grew to 324 bytes: GL_THUNK 336,
+GL_DLL 400. /STATUS "Static Glide" line (files scanned, patched, last error 20-24, scan time). docs/GLIDE.md
+"Static Glide" section.
+Tests: host `sh dos/glide/test/gstest.sh /tmp/dl` PASS (synthetic + all 35 EXE/BDD/OVL files of the 4 demos: hits only
+in the BDD and the 2.31/2.42 OVLs). 86Box PII-450 Voodoo Graphics (gv1.sh): Carmageddon menus + race 6887 swaps =
+6887 frames, 0 lost, race 41-52 fps; Extreme Assault 4149 = 4149; Archimedean Dynasty 14307 = 14307 (OVL only, their EXEs
+scanned, no hit). Cost: AD fps old/new x3 alternating 152.5 vs 152.1 (-0.3 %, spread +-3 %) = noise; scan 178 ms
+(FIGHT3.EXE) / 322 ms (Carmageddon, 3 files) once at load. Keys: priavte testrig/framelog/carmkeys.py (screen-state
+driver; fixed KEYSEQ missed: race start drifts 30-40 s, 86Box drops/doubles arrows). XA quit: Esc, y, Esc, y, Esc.
+Open: LE-EXE static path has no real game yet (host-tested only); Glide 2.1x without the P6 fence not covered; the
+last frame record can wait in the ring until the next trap (seen once: 6932 swaps, 6931 logged, 0 lost).
+Resume: restore as in the DOS Glide section below, `sh dos/glide/test/gstest.sh /tmp/dl`, Carmageddon:
+`W=/tmp/gv1 LOG=c sh dos/glide/gv1.sh 440 /tmp/dl/carm CARM 'C:\GL\HDPMI32I.EXE -r -x > NUL' 'C:\GL\FRAMELOG /AUTO > C:\GL\LOAD.TXT'
+'CD \CARM' 'CARM3DFX' 'C:\GL\FRAMELOG /STATUS > C:\GL\ST.TXT'` + `python3 priavte/testrig/framelog/carmkeys.py /tmp/gv1/vm REFS /tmp/ck`
+(REFS = priavte testrig/framelog/carmref).
+
 ## 2026-11-18 test9: live status line in the host logger (fllog.py)
 
 Done: fllog.py class Live: one status line redrawn once a second (\r, stderr, console only by default; --live forces it,
