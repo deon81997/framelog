@@ -12,10 +12,10 @@ single run, suite (gap 1), piped run = no status line (rigs unchanged). CSV outp
 Docs: pack/FRAMELOG.TXT host step 2, pack/LOG.BAT usage, HOST/README.md fllog row, README news + counter 9.
 test9 zip = test8 zip with HOST/fllog.py, HOST/README.md, HOST/LOG.BAT, FRAMELOG/FRAMELOG.TXT swapped (game PC and
 WIN98 files byte-identical to test8).
-SERIAL-BENCH NOT UPDATED: this session could not attach deon81997/serial-bench (push refused). The change is
-priavte pending/serial-bench-live-test9.patch (diff -u of fllog.py + README.md against test8's host files): apply it
-to serial-bench before the next mkzip.sh, or the live line is lost from test10.
-Next 3: as below (Redguard quit, real Voodoo 1/2 run, static Glide), plus the serial-bench patch.
+serial-bench main 872162c has the same fllog.py/README.md + tests/test_live.py (3 tests; full suite 69, the one
+failure test_games "Forsaken demo" was there before). Tag v0.1-test9 + GitHub release NOT made yet (tag push hangs,
+API refused, no browser): make both in a browser on main ee01bc3 with release/FRAMELOG-0.1-test9.zip.
+Next 3: as below (Redguard quit, real Voodoo 1/2 run, static Glide), plus the test9 tag/release.
 
 ## 2026-11-18 test8: DOS Glide release (cost checked, Redguard quit still open)
 
