@@ -1,5 +1,25 @@
 # HANDOFF — FRAMELOG
 
+## 2026-11-17 DOS 'M' record (run info) DONE - shipped in test4 (DOS exe byte-identical to main 74daa21)
+
+FRAMELOG.EXE sends M after H (and a fresh block, seq 0, before the next frame after INT 10h AH=00h / 4F02h while
+logging): gpu (VBE 4F00h OEM + VBE2 vendor/product, else VGA), driver (VBE x.y, OEM rev, product rev), res/depth/mode
+(VESA: mode list + 4F01h read at load, 4F03h current, tracked via the stub's 4F02h; VGA: 40:49 + CRTC 01/07/09/12h,
+mode=X when chain-4 off), cpu (CPUID brand or vendor family/model/stepping + TSC MHz). /NOMETA = off (no mode hook).
+Code: dos/flmeta.h (pure C builders + encoder), framelog.c meta_init (load) / meta_build (once per block: a few untrapped
+VGA port reads, no INT 10h) / mode_cb (stub RMCB after the BIOS; reads AX/BX the stub pushed behind 'FL' - the Voodoo3
+BIOS nests INT 10h AH=00h 5Fh inside 4F02h, so no shared variables). Stub now 96 bytes, VBE PM table copy at seg+8:0.
+Tests: dos/testrig/meta/metatest.sh 14/14 (bytes == flproto.encode_meta); QEMU e2e plain B + sbemu PASS (SeaBIOS VBE
+3.0 lines); 86Box Voodoo3: Duke ScreenMode 0 = res 320x200 mode=X, ScreenMode 1 = 640x480 mode=VESA 101h;
+game86.sh flipmix (FLIP B then text FLIP) -> '# change@956=mode=text 03h'. serial-bench 44735ca: fllog writes a mid-run
+block as '# change@N=k=v ...' ('k=' = gone), 67 tests; PROTOCOL-M.md marked done, table lives in docs/PROTOCOL.md.
+Cost 86Box PII-450 perf86 FLIPARGS="MB 70", spare loops / FLIP's TSC Hz, test3 vs new, 3 runs each: 1.01147 1.00573
+1.01095 vs 1.01015 1.00881 1.01133 (+0.07%, run spread 0.6%); SBDIAG 59% / 0.0% lost, SC55LOG 0.48x both.
+Next 3: (1) hardware: CSV header lines vs the real card (D810 X300, P5PE-VM 6800) - checklist item in FRAMELOG.TXT;
+(2) if a game's mode isn't in the VBE list -> res missing (only mode=VESA xxxh): add a 4F01h in mode_cb then;
+(3) suite file names use the first block's res: a game that logs from a 320x200 intro gets the wrong name (host idea:
+res of the longest stretch).
+
 ## 2026-11-17 Win98 hook DLL DONE (test4 zip): FRAMELOG.EXE + FLHOOK.DLL, all APIs pass in QEMU + 86Box
 
 Code: win98/ (framelog.c loader + COM worker, flhook.c DLL, lde.c, flshared.h, makefile, tools/chkimp98.py +

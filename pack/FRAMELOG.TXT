@@ -104,6 +104,8 @@ WHICH GAMES LOG (tested in 86Box, Pentium II 450)
 MEASURED COST
   About 0.35% of the game's CPU at 70 fps on a Pentium II 450.
   VESA flips (INT 10h 4F07h, 70 fps): no measurable cost (-0.09%).
+  Run info (M records, test4): no measurable cost (3 runs each, FLIP
+  VESA 70 fps + MIDI: +0.07% spare CPU vs test3, noise 0.6%).
   /3DA traps every retrace-port read (3 million in 30 s for a game that
   waits for vsync): the game keeps its frame rate and SBEMU/SC-55 load is
   unchanged in tests, but its wait loops run slower - leave it off unless
