@@ -9,7 +9,8 @@ ring; FRAMELOG.EXE sends the ring out on the COM port. Nothing on disk is change
 everything is patched in memory and put back when FRAMELOG quits.
 
 What counts as a frame (one per successful call):
-  DirectDraw / Direct3D 5-7   IDirectDrawSurface Flip (full screen); Blt to the primary surface (windowed)
+  DirectDraw / Direct3D 5-7   IDirectDrawSurface Flip (full screen); Blt or BltFast to the primary surface
+                               (windowed; Quake II software renderer in linear modes)
   Direct3D 8 / 9               IDirect3DDevice8/9::Present, IDirect3DSwapChain9::Present
   Glide 2 / Glide 3            grBufferSwap (glide2x.dll / glide3x.dll)
   OpenGL                       wglSwapBuffers in any DLL that has it (OPENGL32.DLL, 3dfx MiniGL such as 3DFXGL.DLL
@@ -17,7 +18,7 @@ What counts as a frame (one per successful call):
 Failed calls (DDERR_WASSTILLDRAWING ...) and presents nested inside another present (any API: a D3D8 Present that
 flips through DirectDraw, SwapBuffers -> wglSwapBuffers -> grBufferSwap) do not count; Glide swaps in a process that
 has an OpenGL DLL (3dfx ICD / MiniGL) are left to the OpenGL swap. A game that both
-flips and blits to the primary is counted by its flips only.
+flips and blits (Blt/BltFast) to the primary is counted by its flips only.
 
 INSTALL (GAME PC)
 
@@ -78,8 +79,8 @@ with FRAMELOG logging vs without)
   +0.35%: all within run-to-run noise (about +-0.5%).
 
 TEST PROGRAMS (TEST folder; N frames at FPS, a result line in <name>.TXT; "spin" = busy-wait and count spare loops)
-  DDTEST [blt] [modex] [spin] N FPS  DirectDraw 640x480x8 page flips (modex = DDSCL_ALLOWMODEX), or windowed Blt
-                                to the primary
+  DDTEST [blt|fast] [modex] [spin] N FPS  DirectDraw 640x480x8 page flips (modex = DDSCL_ALLOWMODEX), or windowed Blt
+                                to the primary; fast = full-screen BltFast to the front buffer (Quake II soft)
   DDDYN N FPS                   DDTEST loading DDRAW.DLL itself (no import), like Quake II's software renderer
   D3DTEST [hal] [spin] N FPS    Direct3D 6, 640x480x16, RGB software device (hal = the card's HAL)
   GLTEST [wgl] [spin] N FPS     OpenGL window 320x240, gdi32 SwapBuffers (wgl = opengl32 wglSwapBuffers)
