@@ -22,7 +22,8 @@ static volatile int g_flipseen;
 static volatile DWORD g_claimed;   /* this process owns the log */
 static DWORD g_lastscan, g_lastfull;
 static volatile LONG g_scanning;
-static DWORD g_swaptid;            /* nesting guard: SwapBuffers -> wglSwapBuffers */
+static volatile DWORD g_ptid;      /* nesting guard, all APIs: only the outermost present on a thread counts
+                                      (SwapBuffers -> wglSwapBuffers -> grBufferSwap, D3D8/9 Present -> DDraw Flip) */
 
 static void diag(const char *fmt, ...)
 {
@@ -192,19 +193,18 @@ static void dd_frame(void *s, unsigned __int64 t, DWORD api)
     }
 }
 
-/* g_ddtid: DirectDraw calls itself through the vtables (a clipped Blt to the primary = one Blt per clip rect):
+/* g_ptid: DirectDraw calls itself through the vtables (a clipped Blt to the primary = one Blt per clip rect):
    only the outermost call on a thread counts */
-static volatile DWORD g_ddtid;
 #define FW(k)                                                                                                         \
     static HRESULT WINAPI fw##k(void *s, void *tg, DWORD f)                                                           \
     {                                                                                                                 \
         unsigned __int64 t = fl_rdtsc();                                                                              \
-        DWORD me = GetCurrentThreadId(), outer = g_ddtid != me;                                                       \
+        DWORD me = GetCurrentThreadId(), outer = g_ptid != me;                                                       \
         HRESULT hr;                                                                                                   \
-        if (outer) g_ddtid = me;                                                                                      \
+        if (outer) g_ptid = me;                                                                                      \
         hr = ((FlipFn)shm->orig[k])(s, tg, f);                                                                        \
         if (outer) {                                                                                                  \
-            g_ddtid = 0;                                                                                              \
+            g_ptid = 0;                                                                                              \
             if (hr == DD_OK) { g_flipseen = 1; dd_frame(s, t, FL_API_DDFLIP); }                                       \
         }                                                                                                             \
         return hr;                                                                                                    \
@@ -212,12 +212,12 @@ static volatile DWORD g_ddtid;
     static HRESULT WINAPI bw##k(void *s, void *r, void *src, void *sr, DWORD f, void *fx)                             \
     {                                                                                                                 \
         unsigned __int64 t = fl_rdtsc();                                                                              \
-        DWORD me = GetCurrentThreadId(), outer = g_ddtid != me;                                                       \
+        DWORD me = GetCurrentThreadId(), outer = g_ptid != me;                                                       \
         HRESULT hr;                                                                                                   \
-        if (outer) g_ddtid = me;                                                                                      \
+        if (outer) g_ptid = me;                                                                                      \
         hr = ((BltFn)shm->orig[k])(s, r, src, sr, f, fx);                                                             \
         if (outer) {                                                                                                  \
-            g_ddtid = 0;                                                                                              \
+            g_ptid = 0;                                                                                              \
             if (hr == DD_OK && !g_flipseen && src && is_primary(s)) dd_frame(s, t, FL_API_DDBLT);                     \
         }                                                                                                             \
         return hr;                                                                                                    \
@@ -238,7 +238,7 @@ typedef struct {
     const char *what;
 } IHOOK;
 
-#define MAXIH 12
+#define MAXIH 16
 static IHOOK ih[MAXIH];
 static int nih;
 
@@ -352,17 +352,27 @@ static void glide_meta(int v3)
 static void WINAPI g2wrap(DWORD n)
 {
     unsigned __int64 t = fl_rdtsc();
+    DWORD me = GetCurrentThreadId(), outer = g_ptid != me;
     int claim;
+    if (outer) g_ptid = me;
     g2swap(n);
-    if (fl_event(t, FL_API_GLIDE2, &claim) && claim) glide_meta(0);
+    if (outer) {
+        g_ptid = 0;
+        if (fl_event(t, FL_API_GLIDE2, &claim) && claim) glide_meta(0);
+    }
 }
 
 static void WINAPI g3wrap(DWORD n)
 {
     unsigned __int64 t = fl_rdtsc();
+    DWORD me = GetCurrentThreadId(), outer = g_ptid != me;
     int claim;
+    if (outer) g_ptid = me;
     g3swap(n);
-    if (fl_event(t, FL_API_GLIDE3, &claim) && claim) glide_meta(1);
+    if (outer) {
+        g_ptid = 0;
+        if (fl_event(t, FL_API_GLIDE3, &claim) && claim) glide_meta(1);
+    }
 }
 
 /* OpenGL */
@@ -400,11 +410,11 @@ static BOOL gl_common(int i, HDC dc, DWORD api)
     unsigned __int64 t = fl_rdtsc();
     DWORD tid = GetCurrentThreadId();
     BOOL r;
-    int claim, nested = (g_swaptid == tid);
-    if (!nested) g_swaptid = tid;
+    int claim, nested = (g_ptid == tid);
+    if (!nested) g_ptid = tid;
     r = i >= 0 ? glswap[i](dc) : gdiswap(dc);
     if (!nested) {
-        g_swaptid = 0;
+        g_ptid = 0;
         if (r && fl_event(t, api, &claim) && claim) gl_meta(i >= 0 ? glmod[i] : glmod[0], dc);
     }
     return r;
@@ -414,6 +424,158 @@ static BOOL WINAPI glw1(HDC dc) { return gl_common(1, dc, FL_API_WGL); }
 static BOOL WINAPI glw2(HDC dc) { return gl_common(2, dc, FL_API_WGL); }
 static void *const glwt[MAXGL] = {glw0, glw1, glw2};
 static BOOL WINAPI gdiw(HDC dc) { return gl_common(-1, dc, FL_API_GDI); }
+
+/* Direct3D 8 / 9: d3d8.dll / d3d9.dll are private modules. Direct3DCreate8/9 = inline hook -> the IDirect3D8/9
+   vtable's CreateDevice slot (in d3d8/9's private .rdata, VirtualProtect works) -> on the first device: inline hook
+   its Present (IDirect3DDevice8 slot 15, IDirect3DDevice9 slot 17) and IDirect3DSwapChain9::Present (slot 3) - the same
+   code for every device of that version. A game whose device exists before FLHOOK loads is missed (start FRAMELOG
+   first or use launch mode). Present on Win98 goes down to DirectDraw: g_ptid makes the Present the frame. */
+typedef HRESULT(WINAPI *PresFn)(void *, const RECT *, const RECT *, HWND, const void *);
+typedef HRESULT(WINAPI *ScPresFn)(void *, const RECT *, const RECT *, HWND, const void *, DWORD);
+typedef void *(WINAPI *D3DCreateFn)(UINT);
+typedef HRESULT(WINAPI *CDevFn)(void *, UINT, DWORD, HWND, DWORD, void *, void **);
+static D3DCreateFn d3dcreate[2];       /* [0] = d3d8, [1] = d3d9 */
+static CDevFn cdev_orig[2];
+static void **cdev_slot[2];
+static PresFn pres_orig[2];
+static ScPresFn scpres9;
+static int d3d_w[2], d3d_h[2], d3d_bpp[2], d3d_win[2];
+static char d3d_gpu[2][96], d3d_drv[2][96];
+
+static int d3d_fmtbits(DWORD f)
+{
+    if (f == 20) return 24;                       /* R8G8B8 */
+    if (f == 21 || f == 22 || f == 31) return 32; /* A8R8G8B8 X8R8G8B8 A2B10G10R10 */
+    if (f >= 23 && f <= 26) return 16;            /* R5G6B5 X1R5G5B5 A1R5G5B5 A4R4G4B4 */
+    return 0;
+}
+
+static void d3d_frame(int v, unsigned __int64 t)
+{
+    int claim;
+    char b[16];
+    if (fl_event(t, v ? FL_API_D3D9 : FL_API_D3D8, &claim) && claim) {
+        meta_add("gpu", d3d_gpu[v]);
+        meta_add("driver", d3d_drv[v]);
+        if (!d3d_bpp[v]) { HDC dc = GetDC(NULL); d3d_bpp[v] = GetDeviceCaps(dc, BITSPIXEL); ReleaseDC(NULL, dc); }
+        meta_res(d3d_w[v], d3d_h[v], d3d_bpp[v]);
+        if (d3d_win[v]) meta_add("windowed", "1");
+        meta_add("api", v ? "d3d9" : "d3d8");
+        sprintf(b, "%d", v ? 9 : 8);
+        meta_add("d3d", b);
+        meta_done();
+    }
+}
+
+#define PRES(v)                                                                                                       \
+    static HRESULT WINAPI pres##v(void *d, const RECT *a, const RECT *b, HWND w, const void *r)                       \
+    {                                                                                                                 \
+        unsigned __int64 t = fl_rdtsc();                                                                              \
+        DWORD me = GetCurrentThreadId(), outer = g_ptid != me;                                                        \
+        HRESULT hr;                                                                                                   \
+        if (outer) g_ptid = me;                                                                                       \
+        hr = pres_orig[v](d, a, b, w, r);                                                                             \
+        if (outer) {                                                                                                  \
+            g_ptid = 0;                                                                                               \
+            if (hr >= 0) d3d_frame(v, t);                                                                             \
+        }                                                                                                             \
+        return hr;                                                                                                    \
+    }
+PRES(0) PRES(1)
+
+static HRESULT WINAPI scpres(void *sc, const RECT *a, const RECT *b, HWND w, const void *r, DWORD f)
+{
+    unsigned __int64 t = fl_rdtsc();
+    DWORD me = GetCurrentThreadId(), outer = g_ptid != me;
+    HRESULT hr;
+    if (outer) g_ptid = me;
+    hr = scpres9(sc, a, b, w, r, f);
+    if (outer) {
+        g_ptid = 0;
+        if (hr >= 0) d3d_frame(1, t);
+    }
+    return hr;
+}
+
+static void d3d_ident(int v, void *d3d, UINT ad)
+{
+    /* IDirect3D8::GetAdapterIdentifier(ad, flags, D3DADAPTER_IDENTIFIER8*) slot 5, same slot + layout start in 9:
+       Driver[512], Description[512], (9: DeviceName[32]), LARGE_INTEGER DriverVersion */
+    static unsigned char id[1200];
+    void **vt = *(void ***)d3d;
+    DWORD *ver;
+    memset(id, 0, sizeof id);
+    if (((HRESULT(WINAPI *)(void *, UINT, DWORD, void *))vt[5])(d3d, ad, 0, id) < 0) return;
+    id[511] = id[1023] = 0;
+    lstrcpynA(d3d_gpu[v], (char *)id + 512, sizeof d3d_gpu[v]);
+    ver = (DWORD *)(id + 1024 + (v ? 32 : 0));
+    _snprintf(d3d_drv[v], sizeof d3d_drv[v] - 1, "%.60s %u.%u.%u.%u", (char *)id, HIWORD(ver[1]), LOWORD(ver[1]),
+              HIWORD(ver[0]), LOWORD(ver[0]));
+}
+
+static void d3d_hook_dev(int v, void *dev)
+{
+    void **vt = *(void ***)dev, *tr;
+    if (!pres_orig[v] && (tr = ihook(NULL, vt[v ? 17 : 15], v ? (void *)pres1 : (void *)pres0,
+                                     v ? "IDirect3DDevice9::Present" : "IDirect3DDevice8::Present")))
+        pres_orig[v] = (PresFn)tr;
+    if (v && !scpres9) {
+        void *sc = NULL;
+        /* IDirect3DDevice9::GetSwapChain = slot 14; IDirect3DSwapChain9::Present = slot 3 */
+        if (((HRESULT(WINAPI *)(void *, UINT, void **))vt[14])(dev, 0, &sc) >= 0 && sc) {
+            void **sv = *(void ***)sc;
+            if ((tr = ihook(NULL, sv[3], scpres, "IDirect3DSwapChain9::Present"))) scpres9 = (ScPresFn)tr;
+            ((RelFn)sv[2])(sc);
+        }
+    }
+}
+
+#define CDEV(v)                                                                                                       \
+    static HRESULT WINAPI cdev##v(void *d3d, UINT ad, DWORD ty, HWND w, DWORD fl, void *pp, void **out)               \
+    {                                                                                                                 \
+        HRESULT hr = cdev_orig[v](d3d, ad, ty, w, fl, pp, out);                                                       \
+        if (hr >= 0 && out && *out && shm && !shm->quitting) {                                                        \
+            DWORD *p = (DWORD *)pp; /* BackBufferWidth, Height, Format, Count, MultiSample, (9: Quality), Swap, hWnd, Windowed */ \
+            d3d_w[v] = p[0]; d3d_h[v] = p[1]; d3d_bpp[v] = d3d_fmtbits(p[2]); d3d_win[v] = p[v ? 8 : 7] != 0;          \
+            if (d3d_win[v]) d3d_bpp[v] = 0; /* desktop depth */                                                       \
+            if (!d3d_gpu[v][0]) d3d_ident(v, d3d, ad);                                                                \
+            d3d_hook_dev(v, *out);                                                                                    \
+            diag("%08lX: d3d%d device %dx%d %s", g_pid, v ? 9 : 8, d3d_w[v], d3d_h[v], d3d_win[v] ? "windowed" : "full"); \
+        }                                                                                                             \
+        return hr;                                                                                                    \
+    }
+CDEV(0) CDEV(1)
+
+static void d3d_vtpatch(int v, void *d3d)
+{
+    void **vt, **slot;
+    DWORD old;
+    if (!d3d || cdev_slot[v]) return;
+    vt = *(void ***)d3d;
+    slot = &vt[v ? 16 : 15]; /* CreateDevice */
+    if (*slot == (v ? (void *)cdev1 : (void *)cdev0)) return;
+    if (!VirtualProtect(slot, 4, PAGE_READWRITE, &old)) { diag("d3d%d: CreateDevice slot VirtualProtect failed", v ? 9 : 8); return; }
+    cdev_orig[v] = (CDevFn)*slot;
+    *slot = v ? (void *)cdev1 : (void *)cdev0;
+    VirtualProtect(slot, 4, old, &old);
+    cdev_slot[v] = slot;
+    diag("%08lX: hooked d3d%d CreateDevice", g_pid, v ? 9 : 8);
+}
+
+static void *WINAPI d3dc8(UINT s) { void *r = d3dcreate[0](s); if (r && shm && !shm->quitting) d3d_vtpatch(0, r); return r; }
+static void *WINAPI d3dc9(UINT s) { void *r = d3dcreate[1](s); if (r && shm && !shm->quitting) d3d_vtpatch(1, r); return r; }
+
+static void d3d_restore(void)
+{
+    DWORD old;
+    int v;
+    for (v = 0; v < 2; v++)
+        if (cdev_slot[v] && VirtualProtect(cdev_slot[v], 4, PAGE_READWRITE, &old)) {
+            *cdev_slot[v] = (void *)cdev_orig[v];
+            VirtualProtect(cdev_slot[v], 4, old, &old);
+            cdev_slot[v] = NULL;
+        }
+}
 
 /* IAT patch: every private module importing gdi32!SwapBuffers */
 #define MAXIAT 48
@@ -496,6 +658,10 @@ static void try_module(HMODULE m)
         if (v3 && !g3swap && (tr = ihook(m, p, g3wrap, "glide3 grBufferSwap"))) { g3swap = (SwapFn)tr; g3mod = m; }
         if (!v3 && !g2swap && (tr = ihook(m, p, g2wrap, "glide2 grBufferSwap"))) { g2swap = (SwapFn)tr; g2mod = m; }
     }
+    if (!d3dcreate[0] && (p = GetProcAddress(m, "Direct3DCreate8")) && (tr = ihook(m, p, d3dc8, "Direct3DCreate8")))
+        d3dcreate[0] = (D3DCreateFn)tr;
+    if (!d3dcreate[1] && (p = GetProcAddress(m, "Direct3DCreate9")) && (tr = ihook(m, p, d3dc9, "Direct3DCreate9")))
+        d3dcreate[1] = (D3DCreateFn)tr;
     if ((p = GetProcAddress(m, "wglSwapBuffers"))) {
         for (i = 0; i < MAXGL; i++)
             if (glmod[i] == m) break;
@@ -511,7 +677,8 @@ static void try_module(HMODULE m)
 
 static void scan(int full)
 {
-    static const char *const names[] = {"glide2x.dll", "glide3x.dll", "opengl32.dll", "3dfxgl.dll", "3dfxvgl.dll", NULL};
+    static const char *const names[] = {"glide2x.dll", "glide3x.dll", "opengl32.dll", "3dfxgl.dll", "3dfxvgl.dll",
+                                         "d3d8.dll", "d3d9.dll", NULL};
     int i;
     if (!shm || shm->quitting || InterlockedExchange(&g_scanning, 1)) return;
     for (i = 0; names[i]; i++) try_module(GetModuleHandleA(names[i]));
@@ -626,6 +793,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD why, LPVOID res)
     } else if (why == DLL_PROCESS_DETACH && shm) {
         if (g_slot >= 0) shm->procs[g_slot].key = 0;
         if (g_claimed && shm->owner_pid == g_pid) shm->owner_gone = 1;
+        d3d_restore();
         ihook_restore_all();
         iat_restore_all();
         if (InterlockedDecrement((LONG *)&shm->dllcount) == 0 && g_pid != shm->loader_pid) dd_restore_if_last();

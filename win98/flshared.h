@@ -21,6 +21,8 @@
 #define FL_API_GLIDE3 8
 #define FL_API_WGL 16
 #define FL_API_GDI 32
+#define FL_API_D3D8 64
+#define FL_API_D3D9 128
 
 #define FL_KIND_FLIP 0
 #define FL_KIND_BLT 1

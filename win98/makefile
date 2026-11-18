@@ -11,7 +11,7 @@ FRAMELOG.EXE: framelog.c flshared.h
 FLHOOK.DLL: flhook.c lde.c flshared.h lde.h
 	$(CC) $(CFLAGS) -shared -o $@ flhook.c lde.c $(LDFLAGS) -Wl,--image-base,0x67800000 -ldxguid -lgdi32
 
-tests: $(T)PROBE.EXE $(T)DDTEST.EXE $(T)GLTEST.EXE $(T)D3DTEST.EXE $(T)G2TEST.EXE $(T)glide2x.dll
+tests: $(T)PROBE.EXE $(T)DDTEST.EXE $(T)GLTEST.EXE $(T)D3DTEST.EXE $(T)G2TEST.EXE $(T)D3D8TEST.EXE $(T)D3D9TEST.EXE $(T)glide2x.dll
 $(T)PROBE.EXE: $(T)probe.c
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS) -lddraw -ldxguid
 $(T)DDTEST.EXE: $(T)ddtest.c $(T)tpace.h
@@ -22,6 +22,10 @@ $(T)GLTEST.EXE: $(T)gltest.c $(T)tpace.h
 	$(CC) $(CFLAGS) -mwindows -o $@ $< $(LDFLAGS) -lopengl32 -lgdi32
 $(T)G2TEST.EXE: $(T)g2test.c $(T)tpace.h
 	$(CC) $(CFLAGS) -mwindows -o $@ $< $(LDFLAGS)
+$(T)D3D8TEST.EXE: $(T)d3dxtest.c $(T)tpace.h
+	$(CC) $(CFLAGS) -mwindows -o $@ $< $(LDFLAGS)
+$(T)D3D9TEST.EXE: $(T)d3dxtest.c $(T)tpace.h
+	$(CC) $(CFLAGS) -DV9 -mwindows -o $@ $< $(LDFLAGS)
 $(T)glide2x.dll: $(T)fakeglide.c $(T)fakeglide.def
 	$(CC) $(CFLAGS) -shared -o $@ $< $(T)fakeglide.def $(LDFLAGS)
 
