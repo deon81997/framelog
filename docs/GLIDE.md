@@ -12,7 +12,8 @@ Status: prototype (wip/dosglide-2026-11-18), tested on 86Box Voodoo3 3000 with t
   name (`_GRBUFFERSWAP@4`, upper case in 3dfx OVLs, `__stdcall`) and patches the thunks. `grBufferSwap(interval)` is
   the frame: on a Voodoo3 it queues a swap packet in the command FIFO (no port I/O, no CRTC write; the display start
   is a Voodoo register), so the CRTC trap never sees a Glide frame.
-- **Statically linked games (Voodoo 1 era, Glide 2.1/2.2).** Glide is inside the game EXE; no OVL. Not covered yet.
+- **Statically linked games (Voodoo 1 era, Glide 2.1/2.2).** Glide is inside the game EXE or a driver file it loads;
+  no OVL. Covered by a byte signature, see "Static Glide" below.
 - Voodoo3 Glide sets the screen mode with VESA (INT 10h 4F02h 111h, 640x480x16), so the M record already shows
   `res=640x480 depth=16 mode=VESA 111h`.
 
@@ -83,7 +84,7 @@ efliks/nostalgic-glide-demo `53 56 57 55 8B 5C 24 14` (8 bytes) - both pass the 
 - The OVL's Watcom DLL start code needs DOS/4GW as host (INT 21h 35E9h hand-over, FF00h check) and aborts under HDPMI32i
   with or without FRAMELOG; glhook.c gl_dllfix patches both while the OVL is read (thunks at GL_DLL, /STATUS "DLL start
   fixes 2"). Extreme Assault 1.1.1 demo (OVL 2.31): 3706/3706 frames; Archimedean Dynasty demo (2.42): 6552/6552;
-  Redguard demo: logs; Carmageddon (static Glide): no OVL, 0 frames, no crash. Rig: dos/glide/gv1.sh.
+  Redguard demo: logs; Carmageddon (static Glide): see "Static Glide". Rig: dos/glide/gv1.sh.
 - Cost on Voodoo Graphics (test8 exe 03b84a18, AD's OVL 2.42, HDPMI32i, FRAMELOG /AUTO, GLFLIP 600 @ 50 fps, hooked
   GLIDE2X.OVL vs unhooked GLX.OVL alternating, 4 pairs per boot, 2 boots in opposite order): spare loops 385.402M vs
   385.694M = -0.076 %, 385.432M vs 385.668M = -0.061 % (logging 600 frames included), 0 lost; gl_dllfix has no runtime
@@ -94,10 +95,53 @@ efliks/nostalgic-glide-demo `53 56 57 55 8B 5C 24 14` (8 bytes) - both pass the 
   /STATUS swaps-vs-frames yet. Next try: in the rig's copy of MENU.INI put `default[6] = 1` (QUIT) instead of
   `default[0]`, then Esc, Esc, Return - or read each Down from a screenshot.
 
+## Static Glide (Glide linked into the game, no GLIDE2X.OVL), 11/18
+
+Carmageddon (Splat Pack demo) links Glide 2.11 into its BRender driver **3DFX_DOS.BDD**: a PE file ("This is a
+BRender driver"), loaded by CARM3DFX.EXE's own PE loader with plain DOS reads (fopen/fread through DOS/4GW's transfer
+buffer), base relocations applied after the read. CARM3DFX.EXE (LE, DOS/4GW) has no Glide in it. So the OVL method
+works unchanged: patch the bytes in the read buffer before the loader copies them up.
+
+- **Which files:** glstub.asm now also calls back on opens of `*.EXE` and `*.BDD` by a protected-mode program (same
+  host-CS check, so COPY/real-mode tools never see patched bytes). glstatic.c gs_parse scans the file with our own
+  handle at open time (4 KB reads, load time only; MZ files without an LE/PE header are skipped after one read).
+  GLIDE2X.OVL keeps its own export-based path, so a game with an OVL is never counted twice (its EXE is scanned, no hit).
+- **Signature** (Glide 2.x SST-1 grBufferSwap; the same function in OVL 2.31, OVL 2.42 and BDD 2.11):
+  - fence: `87 05 xx xx xx xx  89 /r 28 01 00 00  87 05` = the write of swapbufferCMD (SST-1 register 128h) between
+    two `xchg [p6fence],eax` (Glide's P6 write fence) - exactly once per Glide, never in game code;
+  - start: the nearest `53 56 57 55 8B 5C 24 14` (push ebx/esi/edi/ebp; mov ebx,[esp+14h] = swapInterval) at most
+    180h bytes before it; end: `5D 5F 5E 5B C2 04 00` (pop x4, ret 4) at most 40h bytes after it.
+  - Exactly one hit per file, else nothing is patched (/STATUS "last error": 20 none, 21 several, 22 format, 23
+    relocation/fixup in the 8 prologue bytes, 24 read error).
+- **Checks:** PE: no base relocation in the 8 replaced bytes (the BDD's nearest is 2 bytes after them); LE: pages in
+  order, no fixup in [start-6, start+8). Then the OVL thunk: `FF 15 ptr` + 2 NOPs over the prologue, thunk (own
+  64-byte DOS block) = IN 3D4h with 'GL' -> gl_flip, the 8 original bytes, jmp back.
+- **One call = one frame:** gl_flip no longer merges calls < 0.5 ms apart (the merge is for 2-byte CRTC writes).
+  Carmageddon swaps twice back to back at screen changes; merged, /STATUS showed 5790 swaps vs 5782 frames.
+- **Host test:** `sh dos/glide/test/gstest.sh /tmp/dl` (synthetic PE: relocs in/near the prologue, two hits, window
+  edges, broken epilogue; all 35 EXE/BDD/OVL files of the 4 demos: hit only in 3DFX_DOS.BDD 0x53BC and the two SST-1
+  OVLs at their export, none in VRUSH's Rush OVL or any EXE).
+
+Results (86Box PII-450, Voodoo Graphics 4 MB, HDPMI32i; keys: priavte testrig/framelog/carmkeys.py, a screen-state
+driver: Return until the race, wait for the demo timer, Return on the ad, Esc in the race menu, Down/Up until the red
+lamp is on QUIT CARMAGEDDON, Return x2):
+
+| Game | /STATUS | Log |
+| --- | --- | --- |
+| Carmageddon Splat Pack demo | patched in 1 (3 files scanned), grBufferSwap 6932 = flips 6932, 0 lost | 6931 frames (the last record is still in the ring when the game quits); race 41-52 fps (17 ms), menus 29.5 fps |
+| Extreme Assault 1.1.1 demo | OVL 1, static scanned 1, patched 0; 4149 = 4149, 0 lost | exact |
+| Archimedean Dynasty demo | OVL 1, static scanned 1, patched 0; 14307 = 14307, 0 lost | exact |
+
+Cost (86Box PII-450, Archimedean Dynasty mission, fps 5-55 s after the mission starts, old = DOS Glide build without
+static, alternating old/new x3): old 151.0 / 157.8 / 148.8, new 155.4 / 153.4 / 147.4 -> mean 152.5 vs 152.1 (-0.3 %,
+runs spread +-3 %): within noise. Runtime path = the OVL thunk (measured -0.07 % before); the stub only adds compares
+after a successful open. Load time: the scan, once per EXE/BDD opened by the game: 178 ms for FIGHT3.EXE (1.28 MB),
+@@CARMSCAN@@ (/STATUS "scan time").
+
 ## Open
 
 - A real DOS Glide game with Tenberry's loader (does its DLL init run under HDPMI32i? does it read the OVL page by
   page or in big blocks - the hook copes with either, a read only has to cover the bytes).
-- Statically linked Glide games: find grBufferSwap in the EXE by byte signature (per Glide version) and patch it the
-  same way on the EXE's reads.
+- Static Glide in an LE EXE (the code path exists and is host-tested, no real game found yet: Carmageddon keeps its
+  Glide in a PE driver); static Glide 2.1x builds without the P6 fence (signature = fence + 128h, see below).
 - glide3x (DOS Glide 3 is rare) and Voodoo2/Banshee OVLs: run leinfo.py on them.

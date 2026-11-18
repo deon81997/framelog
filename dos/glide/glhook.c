@@ -29,8 +29,8 @@ static void gl_flip(void)
 {
     St.glide_swaps++;
     uint64_t now = rdtsc();
-    if (now - last_sa > St.merge_ticks) { last_sa = now; if (mode3da) pump(); else frame_event(now); }
-    else last_sa = now;
+    last_sa = now;                    /* one call = one swap: never merged (merge_ticks is for 2-byte CRTC writes; */
+    if (mode3da) pump(); else frame_event(now);   /* Carmageddon swaps twice in < 0.5 ms at screen changes) */
 }
 
 static void gl_busy(int b) { _farpokeb(_dos_ds, ((uint32_t)gl_seg << 4) + GLSTUB_CB3 + 2, (uint8_t)b); }
@@ -221,7 +221,9 @@ static void gl_open_cb(void)
     int e = 11;
     if (gl_dos(&r)) {
         int h = r.x.ax;
+        uint64_t t0 = rdtsc();
         e = st ? gs_parse(h) : gl_parse(h);
+        if (st) St.glide_stus += (uint32_t)((rdtsc() - t0) / (St.tsc_hz / 1000000));
         memset(&r, 0, sizeof r); r.h.ah = 0x3E; r.x.bx = h; gl_dos(&r);
     }
     gl_busy(0);
