@@ -144,19 +144,19 @@ def buttons():
     button('btn-win98.gif', 'runs on', 'WIN 98 SE', (0, 128, 128), (255, 255, 255), ((0, 0, 128), '98', (255, 255, 0)))
     button('btn-3dfx.gif', 'tested on a', 'VOODOO3', (0, 0, 0), (255, 255, 255), ((200, 0, 0), 'fx', (255, 255, 255)), anim=True)
     button('btn-serial.gif', 'null-modem', '115200 bd', (0, 0, 64), (0, 255, 255), ((0, 255, 255), 'RS', (0, 0, 64)))
-    button('btn-nofraps.gif', 'no overlay!!', 'NO FRAPS', (128, 0, 0), (255, 255, 255), ((255, 255, 255), 'X', (200, 0, 0)))
+    button('btn-nofraps.gif', 'no overlay', 'NO FRAPS', (128, 0, 0), (255, 255, 255), ((255, 255, 255), 'X', (200, 0, 0)))
     button('btn-gpl.gif', 'free software', 'GPL 2.0+', (128, 0, 0), (255, 255, 255))
     button('btn-download.gif', 'click here to', 'DOWNLOAD!', (0, 128, 0), (255, 255, 0), anim=True)
     im = Image.new('RGB', (88, 31), (0, 0, 0))
     d = crisp(ImageDraw.Draw(im))
     d.rectangle([0, 0, 87, 30], outline=(0, 255, 0))
     d.text((44, 9), 'Y2K', font=F('DejaVuSans-Bold.ttf', 13), fill=(0, 255, 0), anchor='mm')
-    d.text((44, 23), 'COMPLIANT!!', font=F('DejaVuSans-Bold.ttf', 9), fill=(255, 255, 255), anchor='mm')
+    d.text((44, 23), 'COMPLIANT', font=F('DejaVuSans-Bold.ttf', 9), fill=(255, 255, 255), anchor='mm')
     save([im], 'btn-y2k.gif')
 
 
 NAV = [
-    ('nav-news.gif', "what's", 'NEW!!', (128, 0, 0), (255, 255, 0), ((255, 255, 0), '!', (200, 0, 0)), True),
+    ('nav-news.gif', "what's", 'NEW', (128, 0, 0), (255, 255, 0), ((255, 255, 0), '!', (200, 0, 0)), True),
     ('nav-what.gif', 'what is', 'THIS??', (0, 0, 128), (255, 255, 255), ((255, 255, 255), '?', (0, 0, 128)), False),
     ('nav-features.gif', 'cool', 'FEATURES', (0, 96, 0), (255, 255, 255), ((255, 215, 0), '*', (0, 96, 0)), False),
     ('nav-games.gif', 'my game', 'SCORES', (64, 0, 96), (255, 200, 255), ((0, 0, 0), 'fps', (0, 255, 0)), False),
@@ -166,7 +166,7 @@ NAV = [
     ('nav-claude.gif', 'built with', 'CLAUDE', (96, 40, 20), (255, 220, 190), ((217, 119, 87), '*', (255, 255, 255)), False),
     ('nav-download.gif', 'download', 'ZONE', (0, 128, 0), (255, 255, 0), ((255, 255, 0), 'v', (0, 128, 0)), True),
     ('nav-source.gif', 'for nerds:', 'SOURCE', (0, 0, 0), (0, 255, 0), ((0, 64, 0), '</>', (0, 255, 0)), False),
-    ('nav-todo.gif', 'coming', 'SOON!!', (120, 90, 0), (255, 255, 200), ((255, 215, 0), '...', (120, 60, 0)), False),
+    ('nav-todo.gif', 'coming', 'SOON', (120, 90, 0), (255, 255, 200), ((255, 215, 0), '...', (120, 60, 0)), False),
     ('nav-thanks.gif', 'thanks to my', 'FRIENDS', (90, 0, 90), (255, 255, 255), ((255, 80, 160), '<3', (255, 255, 255)), False),
 ]
 
@@ -262,7 +262,7 @@ def vee():
 def vee_hello():
     w, h = 220, 70
     font = F('DejaVuSans-Bold.ttf', 11)
-    lines = ['Hi!! I am Vee.', 'I time every frame', 'your game draws!!']
+    lines = ['Hi, I am Vee.', 'I time every frame', 'your game draws.']
     frames = []
     for k in range(12):
         im = Image.new('RGB', (w, h), (255, 255, 255))
@@ -444,8 +444,8 @@ def report():
 
 # ---------------------------------------------------------------- news ticker (no release asset needed)
 def ticker():
-    text = ('  +++ test6: Quake II\'s software renderer is timed too!! +++ new wiki with every switch explained '
-            '+++ Quake II: same 39.9 fps with or without FRAMELOG +++ Forsaken demo: 0.5% +++ real hardware next!! +++ ')
+    text = ('  +++ test6: Quake II\'s software renderer is timed too +++ new wiki with every switch explained '
+            '+++ Quake II: same 39.9 fps with or without FRAMELOG +++ Forsaken demo: 0.5% +++ real hardware next +++ ')
     font = F('DejaVuSansMono-Bold.ttf', 13)
     w, h = 600, 22
     probe = ImageDraw.Draw(Image.new('L', (1, 1)))
