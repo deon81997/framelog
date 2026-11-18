@@ -15,6 +15,10 @@ The simplest check: the game counts its own frames, so compare.
 | Quake II, OpenGL timedemo | 58.3 fps | 56.7 fps over the whole run, including loading | about 1% |
 | Quake II, software renderer | 39.9 fps | 39.88 fps over the same 632 demo frames | under 0.1% |
 | Forsaken demo | 85.19 fps over 19162 frames | 84.80 fps over the same 19162 frames | 0.5% |
+| Quake II, 3dfx MiniGL / ICD, Voodoo Graphics, Voodoo2, Voodoo3 | 39.7 to 56.9 fps | the same to 0.05 fps over the 632 demo frames | under 0.1% |
+| Incoming demo, Voodoo2 | 41.82 fps over 5000 frames | 41.82 fps over the same 5000 frames | none |
+| Unreal Tournament demo (Glide), Voodoo3, Hardcore off | 72.51 fps | 72.51 fps | none |
+| Expendable demo, three 3dfx cards | 42.07 / 55.64 / 55.24 fps | 41.52 / 55.15 / 54.65 fps over its 11226 frames | about 1% (the game times in whole seconds) |
 | The test programs | N frames, each 1000/FPS ms | N-1 frames, each exactly 1000/FPS ms, none lost | none |
 
 Why "N-1"? When you press start on the host, the next frame is the starting line. The times are the gaps *between*
@@ -43,6 +47,13 @@ And measured in the games themselves:
 |---|---|---|
 | Quake II, software renderer | 39.9 fps | 39.9 and 39.8 fps (two runs) |
 | Quake II, OpenGL | 56.1 fps | 56.7 fps |
+| Quake II, MiniGL, Voodoo Graphics / Voodoo2 / Voodoo3 | 36.2 / 41.1 / 46.6 fps | 42.7 / 41.4 / 52.0 fps |
+| Incoming demo, Voodoo2 | 41.98 fps | 41.82 fps |
+| Unreal Tournament demo, Voodoo3 | 69.15 fps | 72.51 fps |
+
+On 86Box's 3dfx cards the same game moves 5-15% between runs, and the first game after Windows starts is usually the
+slow one (that's the "without" run here), so these only show there's no big slowdown. The spare-CPU numbers above are
+the real cost check.
 
 With NUKED SB-EMU and the SC-55 emulation running alongside, their load doesn't change either.
 

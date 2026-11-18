@@ -44,10 +44,12 @@ The host starts and stops logs with S / X like the DOS TSR. S takes effect at th
 is the start mark, so N presents give N-1 frames). The status line shows LOG / ARM / idle, the process, frames and
 lost frames.
 
-RUN INFO (sent once per start as the M record, see docs/PROTOCOL.md)
+RUN INFO (sent once per start as the M record, see docs/PROTOCOL.md; sent again when a game that started with Blts
+to the desktop - titles, a 2D window - begins to page-flip, e.g. 3DMark99 on a Voodoo2 add-on: then gpu = the 3D card)
 
 game = exe name; gpu / driver = DirectDraw device identifier of the game's DirectDraw (DirectX 6 or newer), the
-Glide version + board type, or the OpenGL renderer / vendor / version; res / depth = the primary surface at the first
+Glide version + board (Voodoo Graphics / Voodoo2 / Banshee-Voodoo3, from the Glide 2 FBI revision), or the OpenGL
+renderer / vendor / version; res / depth = the primary surface at the first
 present (Glide 2: the Glide screen size, 16 bit; OpenGL: the window size + desktop depth); api, cpu (CPUID name +
 MHz), os, hook. What you give fllog.py (--gpu ..., suite INI) wins over these.
 
@@ -92,6 +94,8 @@ The host should see N-1 frames at 1000/FPS ms each (median), 0 lost.
 HARDWARE TEST CHECKLIST (please send the CSVs + FRAMELOG.LOG)
   1. FRAMELOG /LOG, then DDTEST 600 30, D3DTEST hal 300 30, GLTEST 300 30, G2TEST 600 60 (Voodoo): each run N-1
      frames, median 33.3 / 33.3 / 33.3 / 16.7 ms, gpu/driver lines right.
-  2. A real game timedemo: Quake II (timedemo 1, OpenGL / 3dfx MiniGL), Forsaken demo (D3D), 3DMark99 (D3D):
-     frames vs the game's own fps number.
+  2. A real game timedemo: Quake II (timedemo 1, OpenGL / 3dfx MiniGL), Forsaken demo (D3D), 3DMark99 (D3D),
+     Expendable demo (go.exe -timedemo), Incoming demo (gameindex.exe), Unreal Tournament demo (console
+     "timedemo 1" ... "timedemo 0"; set bHardCoreMode=False or divide its number by 1.1): frames vs the game's own
+     fps number. Voodoo1/2 add-on cards: Expendable config.txt DisplayDriver [1], Incoming -secondary.
   3. FRAMELOG game.exe for one of them, and Q to quit while the game still runs (the game must keep running).

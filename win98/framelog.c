@@ -362,6 +362,7 @@ static void send_meta(void)
     }
 }
 
+static DWORD meta_sent;
 static void begin(unsigned __int64 t)
 {
     unsigned char h[8], b[8];
@@ -369,6 +370,7 @@ static void begin(unsigned __int64 t)
     put32(h + 2, (DWORD)tsc_hz);
     h[6] = 0x10; h[7] = 0;
     rec('H', h, 8);
+    meta_sent = shm->meta_gen;
     send_meta();
     put32(b, (DWORD)t); put32(b + 4, (DWORD)(t >> 32));
     rec('B', b, 8);
@@ -466,7 +468,10 @@ static void drain(void)
                 say("meta not complete after 3 s, sending what there is");
             }
             begin(e->tsc);
-        } else if (state == LOGGING) frame_ev(e->tsc);
+        } else if (state == LOGGING) {
+            if (shm->meta_gen != meta_sent && shm->meta_ready) { meta_sent = shm->meta_gen; send_meta(); } /* fresh M block */
+            frame_ev(e->tsc);
+        }
         shm->tail = t + 1;
     }
     oflush();

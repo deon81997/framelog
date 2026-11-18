@@ -190,12 +190,29 @@ static void dd_meta(void *s)
     meta_done();
 }
 
+static int g_ddapi; /* api of the meta sent for this process */
 static void dd_frame(void *s, unsigned __int64 t, DWORD api)
 {
     int claim;
     if (fl_event(t, api, &claim) && claim) {
+        g_ddapi = api;
         meta_add("api", api == FL_API_DDFLIP ? "ddraw-flip" : "ddraw-blt");
         dd_meta(s);
+    } else if (g_claimed && api == FL_API_DDFLIP && g_ddapi == FL_API_DDBLT) {
+        /* claimed by Blts to the primary (titles, a 2D window: 3DMark99 on a Voodoo2 add-on = Cirrus Blts), then the
+           game flips - on its own (3D) DirectDraw object: rebuild the run info from the flipping surface */
+        char p[MAX_PATH], *n;
+        g_ddapi = api;
+        shm->meta_ready = 0;
+        FL_BARRIER();
+        shm->meta[0] = 0;
+        GetModuleFileNameA(NULL, p, sizeof p);
+        n = strrchr(p, '\\');
+        meta_add("game", n ? n + 1 : p);
+        meta_add("api", "ddraw-flip");
+        dd_meta(s);
+        InterlockedIncrement((LONG *)&shm->meta_gen);
+        diag("%08lX: first Flip after Blts: run info rebuilt", g_pid);
     }
 }
 
@@ -356,7 +373,12 @@ static void glide_meta(int v3)
                  hw[5], hw[6], hw[7]);
             static const char *const ty[] = {"3dfx Voodoo Graphics", "3dfx Voodoo Rush", "Alliance AT3D", "3dfx Voodoo2",
                                              "3dfx Voodoo Banshee/3"};
-            meta_add("gpu", hw[1] < 5 ? ty[hw[1]] : "3dfx (Glide2)");
+            /* Voodoo2 and Banshee/Voodoo3 Glide 2 report type 0 (VOODOO) for old games; tell them apart by fbiRev
+               (86Box + 3dfx drivers: Voodoo Graphics 2, Voodoo2 3.02.02 261, Voodoo3 1.02.18 69634) */
+            DWORD t = hw[1];
+            if (t == 0 && hw[3] >= 0x10000) t = 4;
+            else if (t == 0 && hw[3] >= 0x100) t = 3;
+            meta_add("gpu", t < 5 ? ty[t] : "3dfx (Glide2)");
         } else meta_add("gpu", "3dfx (Glide2)");
         if (sw && shh) {
             DWORD w = sw(), hh = shh();

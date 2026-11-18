@@ -45,5 +45,6 @@ for i, p in enumerate(parts):
     if o1 and t:
         if p.startswith('q2'): fl = f"{win(t, o1[1], 'last'):.2f} (last {o1[1]})"
         else:
-            r = best(t, o1[1], o1[0]); fl = f"{r[0]:.2f} ({o1[1]} frames, ends {r[1]} before the last)" if r else 'n/a'
+            tgt = o1[0] / float(os.environ.get('UTDIL', '1.1')) if p == 'ut' else o1[0]  # UT Hardcore: TimeDemo divides real time by TimeDilation 1.1
+            r = best(t, o1[1], tgt); fl = f"{r[0]:.2f} ({o1[1]} frames, ends {r[1]} before the last)" if r else 'n/a'
     print(f"{p:7s} off {o0[0] if o0 else '-':>8} on {o1[0] if o1 else '-':>8} FRAMELOG {fl:40s} csv {len(t)} frames gpu={meta.get('gpu','-')} api={meta.get('api','-')} game={meta.get('pc_game','-')}")

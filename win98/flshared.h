@@ -76,6 +76,8 @@ typedef struct {
     /* diagnostics */
     volatile LONG diag_head;
     char diag[FL_DIAG][96];
+
+    volatile DWORD meta_gen;     /* owner rewrote meta mid-run (Blt-claimed game started to Flip): send a new M block */
 } FLSHM;
 
 static __inline unsigned __int64 fl_rdtsc(void)

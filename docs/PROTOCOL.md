@@ -45,8 +45,11 @@ Optional; old hosts skip it (unknown type = junk, the checksum still frames it).
   `mode=X` when chain-4 is off; text modes send `mode=text 03h` and no `res`); `cpu` = CPUID brand string, else
   `<vendor> family F model M stepping S`, then `, N MHz` (the TSC rate of `H`). A mode set (INT 10h AH=00h / 4F02h) while
   logging = a fresh block before the next frame.
-- Win98 (FRAMELOG.EXE + FLHOOK.DLL, once per start): `game` (exe name), `gpu` + `driver` (DirectDraw GetDeviceIdentifier of the
-  game's own DirectDraw object; Glide 2 grGlideGetVersion + grSstQueryHardware type; Glide 3 grGetString; OpenGL
+- Win98 (FRAMELOG.EXE + FLHOOK.DLL, once per start, plus a fresh block when a game that was claimed by Blts to the
+  primary starts to Flip - the flipping surface's DirectDraw object gives the new `gpu`/`driver`/`api`; FRAMELOG.EXE
+  waits up to 3 s for the first block): `game` (exe name), `gpu` + `driver` (DirectDraw GetDeviceIdentifier of the
+  game's own DirectDraw object; Glide 2 grGlideGetVersion + grSstQueryHardware type, type 0 split by fbiRev: < 100h
+  Voodoo Graphics, < 10000h Voodoo2, else Banshee/Voodoo3; Glide 3 grGetString; OpenGL
   GL_RENDERER / GL_VENDOR + GL_VERSION), `res` + `depth` (DirectDraw: the primary surface at the first present; Glide 2:
   grSstScreenWidth/Height, 16; OpenGL: the window's client size + desktop depth), `api` (ddraw-flip, ddraw-blt, glide2,
   glide3, opengl, d3d8, d3d9; D3D8/9: gpu/driver = GetAdapterIdentifier, res/depth = the back buffer, `windowed=1`),
