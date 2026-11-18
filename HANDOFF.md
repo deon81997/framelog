@@ -10,8 +10,9 @@ failed (Esc, Esc = book menu, Return selects, 86Box dropped 2 of 6 Downs) -> GAM
 +Key (held) support the docs already described. test8 zip = test8 DOS exe 03b84a18 + FRAMELOG.TXT (DOS GLIDE section,
 /NOGLIDE, cost, Voodoo 1/2 PC checklist) + test7's WIN98 files (win98/ unchanged; a fresh mingw build differs in bytes)
 + serial-bench HEAD host files. README news + counter 8.
-Open: tag v0.1-test8 + GitHub release (browser), wip/dosglide-2026-11-18 + wip/dosglide2-2026-11-18 + priavte
-wip/framelog-dosglide3-2026-11-18 still to delete (push --delete was refused here: branches page).
+Released: tag v0.1-test8 = 46a9a1a + GitHub release with the zip (made in Chrome: tag push "hung up" and did not land);
+wip/dosglide-2026-11-18, wip/dosglide2-2026-11-18, priavte wip/framelog-dosglide3-2026-11-18 deleted (branches page).
+Wiki not reposted for test8 (Game Coverage page still says test7).
 Next 3: (1) Redguard: rig copy of MENU.INI default[6] = 1 (QUIT), Esc, Esc, Return -> /STATUS swaps vs frames;
 (2) real Voodoo 1/2 PC run (FRAMELOG.TXT checklist); (3) static Glide (Carmageddon): grBufferSwap by signature.
 Resume: as the section below; cost rig = `W=/tmp/gc1 LOG=cost EXTRA="glflip.exe GLIDE2X.OVL GLX.OVL DOS4GW.EXE" sh
