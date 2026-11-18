@@ -1,7 +1,7 @@
 #!/bin/sh
 # mkzip.sh [SUFFIX] - build release/FRAMELOG-<FL_VER><SUFFIX>.zip (e.g. ./pack/mkzip.sh -test1)
 #   FRAMELOG/ FRAMELOG.EXE FLIP.EXE FRAMELOG.TXT   (game PC, DOS 8.3 names)
-#   WIN98/    FRAMELOG.EXE FLHOOK.DLL FRAMEL98.TXT, TEST/ DDTEST D3DTEST GLTEST G2TEST   (Win98 game PC)
+#   WIN98/    FRAMELOG.EXE FLHOOK.DLL FRAMEL98.TXT, TEST/ DDTEST DDDYN D3DTEST D3D8TEST D3D9TEST GLTEST G2TEST
 #   HOST/     fllog.py flstats.py flproto.py flmeta.py flreport.py README.md LOG.BAT   (host PC)
 # Rebuilds the DOS exes first (DJGPP i586-pc-msdosdjgpp-gcc must be on PATH) and the Win98 files (make -C win98:
 # i686-w64-mingw32-gcc, msvcrt; the import check win98/tools/chkimp98.py must pass).
@@ -28,7 +28,7 @@ cp "$ROOT/pack/FRAMELOG.TXT" "$TMP/FRAMELOG/FRAMELOG.TXT"
 cp "$ROOT/pack/LOG.BAT" "$TMP/HOST/LOG.BAT"
 cp "$ROOT/win98/FRAMELOG.EXE" "$ROOT/win98/FLHOOK.DLL" "$TMP/WIN98/"
 cp "$ROOT/pack/FRAMEL98.TXT" "$TMP/WIN98/FRAMEL98.TXT"
-for t in DDTEST D3DTEST GLTEST G2TEST; do cp "$ROOT/win98/test/$t.EXE" "$TMP/WIN98/TEST/"; done
+for t in DDTEST DDDYN D3DTEST D3D8TEST D3D9TEST GLTEST G2TEST; do cp "$ROOT/win98/test/$t.EXE" "$TMP/WIN98/TEST/"; done
 for f in fllog.py flstats.py flproto.py flmeta.py flreport.py README.md; do
     if [ "${SB_WORKTREE:-0}" != 1 ] && git -C "$SB" rev-parse --git-dir >/dev/null 2>&1; then
         git -C "$SB" show "HEAD:$f" > "$TMP/HOST/$f"

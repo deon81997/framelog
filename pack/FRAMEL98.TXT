@@ -62,7 +62,15 @@ LIMITS
   window and reads no messages is only caught when started as "FRAMELOG game.exe".
 - DOS games in a Win98 DOS box: use the DOS FRAMELOG instead (in a DOS-only boot).
 - Only one FRAMELOG at a time; one process logs at a time.
+- Quake II's software renderer (ref_soft, DirectDraw) is not caught yet (no Flip/Blt reaches the hooks; its OpenGL
+  renderer is). Open bug.
 - If FRAMELOG is killed (End Task) while a DirectDraw game runs, quit that game before starting FRAMELOG again.
+
+MEASURED AGAINST THE GAMES' OWN FPS (86Box Pentium II 450, Voodoo3 3000 AGP, 3dfx 1.02.18, DirectX 9.0c)
+  Quake II 3.14 demo, timedemo 1 q2demo1.dm2, OpenGL (3dfx ICD): game 58.3 fps; FRAMELOG 742 presents (the game counts
+  632 demo frames + load/console frames), same rate (56.7 fps over the whole run, 1%). Without FRAMELOG: 56.1 fps.
+  Forsaken demo, PLAY DEMO biodome.dmo 100%: game AVG 85.19 fps / 19162 frames; FRAMELOG's last 19162 frames 84.80 fps
+  (0.5%). D3D8TEST / D3D9TEST: N-1 frames at 25.00 ms, spare loops with vs without FRAMELOG -0.5% (noise).
 
 MEASURED COST (86Box Pentium II 450, Cirrus 5446, Windows 98 SE, test programs in WIN98\TEST, spare-CPU loops
 with FRAMELOG logging vs without)
@@ -70,7 +78,9 @@ with FRAMELOG logging vs without)
   +0.35%: all within run-to-run noise (about +-0.5%).
 
 TEST PROGRAMS (TEST folder; N frames at FPS, a result line in <name>.TXT; "spin" = busy-wait and count spare loops)
-  DDTEST [blt] [spin] N FPS     DirectDraw 640x480x8 page flips, or windowed Blt to the primary (blt)
+  DDTEST [blt] [modex] [spin] N FPS  DirectDraw 640x480x8 page flips (modex = DDSCL_ALLOWMODEX), or windowed Blt
+                                to the primary
+  DDDYN N FPS                   DDTEST loading DDRAW.DLL itself (no import), like Quake II's software renderer
   D3DTEST [hal] [spin] N FPS    Direct3D 6, 640x480x16, RGB software device (hal = the card's HAL)
   GLTEST [wgl] [spin] N FPS     OpenGL window 320x240, gdi32 SwapBuffers (wgl = opengl32 wglSwapBuffers)
   G2TEST [nowin] [spin] N FPS   Glide 2 640x480 with your glide2x.dll (nowin = no window: needs FRAMELOG G2TEST.EXE)

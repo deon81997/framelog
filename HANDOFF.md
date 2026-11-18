@@ -1,5 +1,39 @@
 # HANDOFF — FRAMELOG
 
+## 2026-11-17 Win98 real games + D3D8/9 Present hook DONE (test5 zip; Voodoo3 VM = priavte store-w98qi-86box-v3)
+
+D3D8/9 (win98/flhook.c): Direct3DCreate8/9 inline hook -> IDirect3D8/9 vtable CreateDevice slot (15 / 16, private
+.rdata, VirtualProtect) -> on the first device inline-hook IDirect3DDevice8::Present (slot 15) / Device9::Present (17)
++ IDirect3DSwapChain9::Present (3). Meta: GetAdapterIdentifier (gpu/driver), back buffer res/format, windowed=1,
+api d3d8/d3d9, d3d=8/9. One nesting guard g_ptid for every API (outermost present per thread counts); Glide swaps in a
+process with an OpenGL DLL hooked are not frames (3dfx ICD init swaps). Tests: test/d3dxtest.c -> D3D8TEST/D3D9TEST
+([win] [sc] [spin] N FPS), DDDYN (DDTEST without a DDRAW import), DDTEST modex. /LOG: "first Flip hr" + detach line
+"Flip N Blt N nested N" per process.
+VM: priavte store-w98qi-86box-v3 (vms/w98-86box-v3/acpi: P3B-F PII-450, Voodoo3 3000 AGP voodoo3_3k_agp, v3w9x 1.02.18
+installed by PnP from C:\DRIVER (its VOODOO3.INF swapped, msvcrt line dropped), DX9.0c, SB16 only, 800x600x16;
+C:\QUAKE2 demo, Forsaken demo installed, C:\3DMARK99 unpacked). Rig: win98/testrig/v3 (boot.sh GO.BAT FILES = one
+boot, C: changes stay; run.sh = + fllog --suite 20 sections -> /tmp/v3out/csv; split.py; mkpak.py). Interactive
+games: drive with vms/bin/86run.sh DIR key/shot while boot.sh runs.
+Results (86Box PII-450, Voodoo3): all test programs N-1 frames at 25.00 ms on the real 3dfx driver (DDTEST flip/blt,
+D3DTEST hal, GLTEST gdi/wgl, G2TEST real glide2x = +155 frames of the 3dfx splash, D3D8TEST full/win). D3D9 fails on
+1.02.18 (E_OUTOFMEMORY = DX6 driver); with QuickInstall's Voodoo3 driver (4.12.1.1225, 6/2000; /tmp copy of
+store-w98qi-86box + Voodoo3, not stored) D3D9TEST win / win sc 199/199, fullscreen NOTAVAILABLE. Cost spare loops:
+D3D8 -0.5%, D3D9 -0.6..+2% (noise).
+Quake II 3.14 demo GL: Q2 "632 frames 10.8 s 58.3 fps", FRAMELOG 742 presents incl. load/console, 56.7 fps whole run;
+w/o FRAMELOG 56.1 fps. Command line that quits after the timedemo (exec of a cfg does NOT work in the demo, +set is
+applied before the map and demomap clears nextserver): +set logfile 2 +set vid_fullscreen 1 +timedemo 1 +alias fin
+"killserver; quit" +alias go "demomap q2demo1.dm2; set nextserver fin" +go.
+Forsaken demo (PLAY DEMO, biodome.dmo, 100%): game AVG 85.19 FPS 19162 frames 3.44; FRAMELOG last 19162 frames before
+Esc 225.96 s = 84.80 fps. The demo is long (~11 min, loops); Esc returns to the menu, Play Demo page shows AVG.
+OPEN BUGS: (1) Q2 software renderer (vid_ref soft, DDraw 8-bit, ALLOWMODEX) logs nothing: FLHOOK attached, but zero
+Flip/Blt reach the wrappers, while DDTEST/DDDYN/DDTEST modex (same flags) work - Q2's front buffer vtable is not one of
+the 5 FRAMELOG.EXE patches; next: debug hook IDirectDraw::CreateSurface (DD vtable slot 6) to log the surface vtables
+Q2 gets. Repro: v3 rig, FRAMELOG then start /w QUAKE2.EXE +set vid_ref soft +set sw_mode 3 (+ Q2 line above).
+(2) 3DMark99 Max on 86Box Voodoo3 (default 800x600x16 triple buffer) shows garbage, then an error box, also WITHOUT
+FRAMELOG -> emulator/driver issue; try 640x480 double buffer in its Display settings (GUI only, no command line).
+Next 3: (1) Q2 soft bug above; (2) 3DMark99 at 640x480 (+ its per-test fps vs FRAMELOG); (3) hardware: test5 on the
+D810/P5PE-VM (D3D8/9 games), DOS Glide / capture from the old list.
+
 ## 2026-11-17 DOS 'M' record (run info) DONE - shipped in test4 (DOS exe byte-identical to main 74daa21)
 
 FRAMELOG.EXE sends M after H (and a fresh block, seq 0, before the next frame after INT 10h AH=00h / 4F02h while
@@ -20,7 +54,7 @@ Next 3: (1) hardware: CSV header lines vs the real card (D810 X300, P5PE-VM 6800
 (3) suite file names use the first block's res: a game that logs from a 320x200 intro gets the wrong name (host idea:
 res of the longest stretch).
 
-## 2026-11-17 Win98 hook DLL DONE (test4 zip): FRAMELOG.EXE + FLHOOK.DLL, all APIs pass in QEMU + 86Box
+## 2026-11-17 Win98 hook DLL DONE (test5 zip): FRAMELOG.EXE + FLHOOK.DLL, all APIs pass in QEMU + 86Box
 
 Code: win98/ (framelog.c loader + COM worker, flhook.c DLL, lde.c, flshared.h, makefile, tools/chkimp98.py +
 w98exports.txt from the VM's system DLLs), docs: pack/FRAMEL98.TXT (in the zip as WIN98/), PROTOCOL.md (Win98 frame

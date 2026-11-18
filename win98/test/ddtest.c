@@ -1,4 +1,4 @@
-/* DDTEST.EXE [blt] [dyn] [N] [FPS] - DirectDraw: fullscreen 640x480x8 page flips (default) or windowed Blt to the
+/* DDTEST.EXE [blt] [dyn] [modex] [N] [FPS] (modex = DDSCL_ALLOWMODEX like Quake II's ref_soft) - DirectDraw: fullscreen 640x480x8 page flips (default) or windowed Blt to the
    primary (blt), N frames at FPS. Also does non-primary Blts and (flip mode) a Blt to the primary after the first
    flip: neither may count. dyn = load DDRAW.DLL with LoadLibrary after the window is up (like Quake II's
    ref_soft); DDDYN.EXE = the same build with no DDRAW import at all. Result line in DDTEST.TXT. */
@@ -35,7 +35,7 @@ int WINAPI WinMain(HINSTANCE hi, HINSTANCE hp, LPSTR cmd, int show)
     memset(&sd, 0, sizeof sd);
     sd.dwSize = sizeof sd;
     if (!blt) {
-        hr = IDirectDraw_SetCooperativeLevel(dd, w, DDSCL_EXCLUSIVE | DDSCL_FULLSCREEN);
+        hr = IDirectDraw_SetCooperativeLevel(dd, w, DDSCL_EXCLUSIVE | DDSCL_FULLSCREEN | (strstr(cmd, "modex") ? DDSCL_ALLOWMODEX : 0));
         if (hr == DD_OK) hr = IDirectDraw_SetDisplayMode(dd, 640, 480, 8);
         if (hr != DD_OK) { tp_log("flip: mode %08lX", hr); return 1; }
         sd.dwFlags = DDSD_CAPS | DDSD_BACKBUFFERCOUNT;
@@ -84,7 +84,8 @@ int WINAPI WinMain(HINSTANCE hi, HINSTANCE hp, LPSTR cmd, int show)
         if (hr == DD_OK) ok++;
         tp_wait();
     }
-    tp_log("ddtest %s frames %d ok %d fps %d spare %lu", blt ? "blt" : "flip", tp_n, ok, tp_fps, tp_spare);
+    tp_log("ddtest %s%s frames %d ok %d fps %d spare %lu vt %p flip %p", blt ? "blt" : "flip", strstr(cmd, "modex") ? " modex" : "",
+           tp_n, ok, tp_fps, tp_spare, *(void **)pri, (*(void ***)pri)[11]);
     if (off) IDirectDrawSurface_Release(off);
     IDirectDrawSurface_Release(pri);
     if (!blt) IDirectDraw_RestoreDisplayMode(dd);
