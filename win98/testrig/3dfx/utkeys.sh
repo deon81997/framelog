@@ -1,6 +1,6 @@
 #!/bin/sh
 # utkeys.sh [RUNS] [SECS] - drive Unreal Tournament's own timedemo while an 86Box VM runs GO.BAT (mkbat.sh ut):
-# when the 86Box window shrinks to a 640x480 guest mode (UT fullscreen), wait 45 s (load), Tab "timedemo 1",
+# (run UT in its own boot: any 640x480 game triggers it) when the 86Box window shrinks to a 640x480 guest mode (UT fullscreen), wait 45 s (load), Tab "timedemo 1",
 # wait SECS (60), Tab "timedemo 0" (UT logs "N frames rendered in S seconds. X FPS average." to its log), Tab "exit".
 # Repeats for RUNS (2: without + with FRAMELOG) mode switches.
 export DISPLAY=:86; R=${1:-2}; S=${2:-60}
