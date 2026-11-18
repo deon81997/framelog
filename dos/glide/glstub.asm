@@ -2,7 +2,8 @@
 ; DOS Glide games load GLIDE2X.OVL (an LE DLL) with plain DOS reads through their DOS extender's real-mode transfer
 ; buffer. This stub watches those calls only:
 ;   - open (AH=3Dh, AH=6Ch, AX=716Ch) of ...\GLIDE2X.OVL by a protected-mode program succeeded -> cb (gl_open_cb):
-;     parse it, arm hnd (name + caller checked here, so other opens never leave real mode);
+;     parse it, arm hnd (name + caller checked here, so other opens never leave real mode); also *.EXE / *.BDD
+;     (static Glide inside the game's EXE or a renderer driver: glstatic.c scans them, arms only on a match);
 ;   - read (AH=3Fh) on the armed handle succeeded -> cb2 (gl_read_cb): patch grBufferSwap's first bytes in the
 ;     buffer before the extender copies it up (a CALL to FRAMELOG's 32-bit thunk, see glhook.c);
 ;   - close (AH=3Eh) of the armed handle -> disarm.
@@ -77,12 +78,12 @@ out:    push bp
         pop bp
         iret
 
-; CF clear if the file just opened is ...\GLIDE2X.OVL and the caller's CS is the DPMI host's (hostcs, 0 = any).
+; CF clear if the file just opened is ...\GLIDE2X.OVL, *.EXE or *.BDD and the caller's CS is the DPMI host's (hostcs, 0 = any).
 ; Stack: [bp] bp, +2 near return, +4 'FL', +6 request AX, +8 caller IP, +10 caller CS. Registers kept.
 isglide:
         push bp
         mov bp, sp
-        push ax
+        push eax
         push bx
         push si
         push di
@@ -113,7 +114,7 @@ isglide:
 .e:     mov ax, si
         sub ax, di
         cmp ax, 11
-        jne .no
+        jne .ext
         xor bx, bx
 .c:     mov al, [di+bx]
         cmp al, 'a'
@@ -122,17 +123,24 @@ isglide:
         ja .u
         sub al, 20h
 .u:     cmp al, [cs:gname+bx]
-        jne .no
+        jne .ext
         inc bx
         cmp bx, 11
         jb .c
-        clc
+        jmp .yes
+.ext:   mov eax, [si-4]             ; extension (SI = the NUL), lower case
+        or eax, 20202000h
+        cmp eax, '.exe'
+        je .yes
+        cmp eax, '.bdd'
+        jne .no
+.yes:   clc
         jmp .x
 .no:    stc
 .x:     pop di
         pop si
         pop bx
-        pop ax
+        pop eax
         pop bp
         ret
 gname:  db 'GLIDE2X.OVL'

@@ -17,6 +17,7 @@ typedef struct {
     uint32_t vesa; volatile uint32_t vesa_calls;   /* /NOVESA clears vesa; display-start calls (INT 10h 4F07h + VBE PM thunk) */
     volatile uint32_t vbepm, vbepm_skip;            /* INT 10h 4F0Ah (PM interface) requests, tables not patched */
     uint32_t meta; volatile uint32_t metas, modesets;   /* /NOMETA clears meta; M blocks sent; INT 10h mode sets seen */
-    uint32_t glide; volatile uint32_t glide_opens, glide_patched, glide_swaps, glide_err, glide_dllfix;   /* DOS Glide hook (glide/glhook.c) */
+    uint32_t glide; volatile uint32_t glide_opens, glide_patched, glide_swaps, glide_err, glide_dllfix,
+             glide_stscan, glide_static, glide_sterr;   /* DOS Glide hook (glide/glhook.c, glstatic.c) */
 } FLSTATE;
 #endif

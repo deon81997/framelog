@@ -14,8 +14,8 @@
  * also what makes the low-memory thunk reachable with absolute addresses. */
 #include "glide/glstub.h"
 #define GL_BUF     4096               /* DOS read buffer for our own parsing */
-#define GL_THUNK   320                /* thunk offset in the block (stub at 0) */
-#define GL_DLL     384                /* DLL start-code thunks (2 x 16 bytes) */
+#define GL_THUNK   336                /* thunk offset in the block (stub at 0) */
+#define GL_DLL     400                /* DLL start-code thunks (2 x 16 bytes) */
 #define GL_IO      448                /* DOS buffer offset (name copy + reads; thunk <= 64 bytes) */
 _Static_assert(sizeof glstub_bin <= GL_THUNK, "glstub.asm grew into the thunk");
 static DPMI_REG gl_open_reg, gl_read_reg;
@@ -193,6 +193,8 @@ static int gl_parse(int h)
     return 0;
 }
 
+#include "glide/glstatic.c"         /* static Glide: grBufferSwap inside *.EXE / *.BDD (no GLIDE2X.OVL) */
+
 static void gl_open_cb(void)
 {
     uint32_t sp = ((uint32_t)gl_open_reg.w.ss << 4) + gl_open_reg.w.sp;   /* [far return] flags 'FL' request */
@@ -208,8 +210,8 @@ static void gl_open_cb(void)
     for (i = 0; i < 127 && (name[i] = _farpeekb(_dos_ds, a + i)); i++)
         if (name[i] == '\\' || name[i] == '/' || name[i] == ':') b = i + 1;
     name[i] = 0;
-    if (strcasecmp(name + b, "GLIDE2X.OVL")) return;
-    St.glide_opens++;
+    int st = strcasecmp(name + b, "GLIDE2X.OVL") != 0;       /* else *.EXE / *.BDD from the stub: static scan */
+    if (st) St.glide_stscan++; else St.glide_opens++;
     /* own handle: open the same name (same drive/dir/PATH context as the game) */
     __dpmi_regs r;
     memset(&r, 0, sizeof r);
@@ -219,11 +221,13 @@ static void gl_open_cb(void)
     int e = 11;
     if (gl_dos(&r)) {
         int h = r.x.ax;
-        e = gl_parse(h);
+        e = st ? gs_parse(h) : gl_parse(h);
         memset(&r, 0, sizeof r); r.h.ah = 0x3E; r.x.bx = h; gl_dos(&r);
     }
     gl_busy(0);
-    St.glide_err = e;
+    if (!st) St.glide_err = e;
+    else if (!e) St.glide_static++;
+    else if (e != GS_NONE && e != GS_FMT) St.glide_sterr = e;   /* found but not patchable */
     if (!e) _farpokew(_dos_ds, ((uint32_t)gl_seg << 4) + GLSTUB_CB3, gl_open_reg.w.ax);   /* arm the game's handle */
 }
 

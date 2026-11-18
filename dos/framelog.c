@@ -446,6 +446,8 @@ int main(int argc, char **argv)
         if (r.glide) printf("  Glide hook on: GLIDE2X.OVL opens %lu, patched loads %lu, grBufferSwap calls %lu, last result %lu%s, DLL start fixes %lu\n",
                             (unsigned long)r.glide_opens, (unsigned long)r.glide_patched, (unsigned long)r.glide_swaps,
                             (unsigned long)r.glide_err, r.glide_err ? " (not hooked, docs/GLIDE.md)" : "", (unsigned long)r.glide_dllfix);
+        if (r.glide) printf("  Static Glide: EXE/BDD files scanned %lu, grBufferSwap patched in %lu, last error %lu\n",
+                            (unsigned long)r.glide_stscan, (unsigned long)r.glide_static, (unsigned long)r.glide_sterr);
         else puts("  Glide hook off (/NOGLIDE)");
         return 0;
     }
