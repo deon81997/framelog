@@ -1,37 +1,53 @@
-# FRAMELOG
+<p align="center"><img src="https://raw.githubusercontent.com/deon81997/framelog/main/docs/90s/title.gif" width="520" alt="FRAMELOG"></p>
 
-**Frame-time logging for DOS and Windows 98 games, over a serial cable, to a second PC.**
+# Welcome to the FRAMELOG wiki
 
-FRAMELOG times every frame a retro game shows and sends the times over a null-modem cable to a host PC. The host
-writes one CSV per run and turns the CSVs into stats, graphs and HTML reports: average fps, 1% / 0.1% lows,
-frame-time plots, GPU-vs-GPU comparisons. Think FRAPS / PresentMon, but for a Pentium with a Voodoo, and with
-no overlay, no patched game files and almost no cost on the game PC.
+FRAMELOG answers one question about old PCs: **how smooth does this game actually run on this machine?**
 
-| Part | Runs on | What it does |
-|---|---|---|
-| `FRAMELOG\FRAMELOG.EXE` | DOS game PC | resident program (TSR, needs HDPMI32i): catches page flips (VGA CRTC start address, VESA 4F07h, VBE 2.0 PM SetDisplayStart) |
-| `WIN98\FRAMELOG.EXE` + `FLHOOK.DLL` | Windows 98 game PC | hooks DirectDraw / Direct3D 5-9 / Glide 2-3 / OpenGL presents in memory |
-| `HOST\fllog.py` + friends | host PC (Windows or Linux) | logger, stats, HTML reports, capture analyzer ([serial-bench](https://github.com/deon81997/serial-bench)) |
+Average fps alone doesn't tell you much. A Voodoo3 that averages 60 fps but stutters every second feels worse than a
+card that holds a steady 45. To see that you need the time of every single frame, and on a 1999 PC that's harder
+than it sounds. FRAPS draws over your picture and writes to the disk while you play, and plain DOS has no tool like
+it at all.
+
+So FRAMELOG does it differently. The **game PC** notes the exact moment each frame reaches the screen and sends it
+down a **serial cable** to a **second PC**. The game PC does almost no extra work (well under 1% in every test so
+far). The second PC does the heavy lifting: saving, stats, graphs, reports.
+
+<p align="center"><img src="https://raw.githubusercontent.com/deon81997/framelog/main/docs/90s/vee-hello.gif" width="360" alt="Vee, the FRAMELOG mascot, says hi"></p>
+
+## What's in the box
+
+There are three parts, all in one zip:
+
+- **FRAMELOG for DOS** sits in memory and notices every page flip a DOS game makes: plain VGA, Mode X and VESA.
+  It runs happily next to [NUKED SB-EMU](https://github.com/deon81997/NUKED-SBEMU).
+- **FRAMELOG for Windows 98** hooks the way a game puts a frame on screen: DirectDraw, Direct3D 5 to 9, Glide and
+  OpenGL. Everything happens in memory, so no game or system files are touched.
+- **The host tools** (from [serial-bench](https://github.com/deon81997/serial-bench)) run on any modern PC. They log
+  the frames to CSV files, print the numbers, draw graphs, and build HTML pages that compare GPUs side by side.
+
+## Where to go next
+
+New here? Start with **[[Quick Start]]**. You can have your first log in a few minutes.
+
+Then, depending on what you're doing:
+
+- Logging DOS games: **[[DOS FRAMELOG]]**
+- Logging Windows 98 games: **[[Windows 98 FRAMELOG]]**
+- Turning logs into numbers and pretty pages: **[[Host Tools]]**
+- Wondering if your game works: **[[Game Coverage]]**
+- Wondering if you can trust the numbers: **[[Measurements]]**
+- Testing on real hardware for me: **[[Hardware Test Checklist]]**
+- Curious how the bytes look on the wire: **[[Serial Protocol]]**
+- What's broken and what's next: **[[Known Issues and Roadmap]]**, **[[Changelog]]**
 
 ## Download
 
-Latest test build: **[v0.1-test6](https://github.com/deon81997/framelog/releases/tag/v0.1-test6)** (pre-release,
-`FRAMELOG-0.1-test6.zip`). One zip holds all three folders. See [[Changelog]].
+The current test build is **[v0.1-test6](https://github.com/deon81997/framelog/releases/tag/v0.1-test6)**. It's
+still a test build: everything works in emulators, and real-hardware runs are next. If you try it, I'd love to see
+your CSVs!
 
-## Pages
+---
 
-- [[Quick Start]]: cable, host, first log in five minutes
-- [[DOS FRAMELOG]]: install, options, VESA, run info, which games log, cost
-- [[Windows 98 FRAMELOG]]: what counts as a frame, launch mode, options, limits, test programs
-- [[Host Tools]]: `fllog.py`, suites, `flstats.py`, `flreport.py`, `flcap.py`
-- [[Game Coverage]]: tested games and how to benchmark them
-- [[Measurements]]: accuracy against the games' own fps, and FRAMELOG's own cost
-- [[Serial Protocol]]: the wire format (records, run info, what a frame is)
-- [[Hardware Test Checklist]]: what to run on real machines and send back
-- [[Known Issues and Roadmap]]
-- [[Changelog]]
-
-## Status (2026-11-17)
-
-Everything so far is tested in emulators (86Box Pentium II 450 with Voodoo3 / Cirrus, QEMU). Real-hardware runs
-on a Dell Latitude D810 and an ASUS P5PE-VM are the next step; see [[Hardware Test Checklist]].
+<sub>FRAMELOG's code, docs and art are written by Claude, an AI by Anthropic. I pick what to build and test it on my
+real PCs.</sub>

@@ -1,1 +1,1 @@
-Wiki sources: framelog `docs/wiki/` (edit there, then repost).
+Something wrong, missing or confusing? [Open an issue](https://github.com/deon81997/framelog/issues). Wiki sources live in `docs/wiki/` in the repo.

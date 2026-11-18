@@ -1,6 +1,8 @@
 # Serial Protocol
 
-Reference copy of [docs/PROTOCOL.md](https://github.com/deon81997/framelog/blob/main/docs/PROTOCOL.md) (that file wins if they differ).
+This page is for the curious and for anyone writing their own host tool. It describes exactly what goes over the cable. It's small: the host sends single letters, and the game PC sends short fixed-size records with a checksum, so a garbled byte never derails a whole log.
+
+The master copy is [docs/PROTOCOL.md](https://github.com/deon81997/framelog/blob/main/docs/PROTOCOL.md) in the repo; if this page and that file ever disagree, the file wins.
 
 One protocol for the DOS TSR and the Win98 hook DLL. 8N1, default 115200 baud, no flow control.
 Little-endian. All timing is in TSC ticks of the game PC; the header gives the TSC rate.

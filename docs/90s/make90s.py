@@ -176,7 +176,7 @@ def nav():
         button(n, a, b, bg, fg, left, anim or None)
 
 
-def counter(n=5):
+def counter(n=6):
     digits = '%06d' % n
     font = F('DejaVuSansMono-Bold.ttf', 18)
     w, h = 6 * 16 + 4, 26
@@ -444,8 +444,8 @@ def report():
 
 # ---------------------------------------------------------------- news ticker (no release asset needed)
 def ticker():
-    text = ('  +++ test5: Direct3D 8 + 9 games are timed too!! +++ Quake II timedemo: FRAMELOG 1% from the game\'s own fps '
-            '+++ Forsaken demo: 0.5% +++ a Voodoo3 lives in my test lab now +++ under 0.5% CPU cost +++ ')
+    text = ('  +++ test6: Quake II\'s software renderer is timed too!! +++ new wiki with every switch explained '
+            '+++ Quake II: same 39.9 fps with or without FRAMELOG +++ Forsaken demo: 0.5% +++ real hardware next!! +++ ')
     font = F('DejaVuSansMono-Bold.ttf', 13)
     w, h = 600, 22
     probe = ImageDraw.Draw(Image.new('L', (1, 1)))
