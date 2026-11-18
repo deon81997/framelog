@@ -54,7 +54,7 @@ Next 3: (1) hardware: CSV header lines vs the real card (D810 X300, P5PE-VM 6800
 (3) suite file names use the first block's res: a game that logs from a 320x200 intro gets the wrong name (host idea:
 res of the longest stretch).
 
-## 2026-11-17 Win98 hook DLL DONE (test5 zip): FRAMELOG.EXE + FLHOOK.DLL, all APIs pass in QEMU + 86Box
+## 2026-11-17 Win98 hook DLL DONE (test4 zip): FRAMELOG.EXE + FLHOOK.DLL, all APIs pass in QEMU + 86Box
 
 Code: win98/ (framelog.c loader + COM worker, flhook.c DLL, lde.c, flshared.h, makefile, tools/chkimp98.py +
 w98exports.txt from the VM's system DLLs), docs: pack/FRAMEL98.TXT (in the zip as WIN98/), PROTOCOL.md (Win98 frame
