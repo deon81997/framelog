@@ -84,6 +84,15 @@ efliks/nostalgic-glide-demo `53 56 57 55 8B 5C 24 14` (8 bytes) - both pass the 
   with or without FRAMELOG; glhook.c gl_dllfix patches both while the OVL is read (thunks at GL_DLL, /STATUS "DLL start
   fixes 2"). Extreme Assault 1.1.1 demo (OVL 2.31): 3706/3706 frames; Archimedean Dynasty demo (2.42): 6552/6552;
   Redguard demo: logs; Carmageddon (static Glide): no OVL, 0 frames, no crash. Rig: dos/glide/gv1.sh.
+- Cost on Voodoo Graphics (test8 exe 03b84a18, AD's OVL 2.42, HDPMI32i, FRAMELOG /AUTO, GLFLIP 600 @ 50 fps, hooked
+  GLIDE2X.OVL vs unhooked GLX.OVL alternating, 4 pairs per boot, 2 boots in opposite order): spare loops 385.402M vs
+  385.694M = -0.076 %, 385.432M vs 385.668M = -0.061 % (logging 600 frames included), 0 lost; gl_dllfix has no runtime
+  part. SBEMU + SC-55 (perf86.sh idle) test7 exe vs test8 exe: SC55LOG 0.48x, SBDIAG 61 % CPU, 0.0 % lost, longest
+  interrupt 3.57-3.61 ms on both. GLFLIP's swap count includes ~74 per run that grSstWinOpen/Close make themselves.
+- Redguard quit (11/18, 2 tries, gv1.sh +Key): Esc #1 closes the intro letter, Esc #2 opens the book menu (SAVE
+  highlighted), Return selects; 86Box dropped 2 of 6 held Downs 5 s apart (landed on MOVIES), so no clean quit and no
+  /STATUS swaps-vs-frames yet. Next try: in the rig's copy of MENU.INI put `default[6] = 1` (QUIT) instead of
+  `default[0]`, then Esc, Esc, Return - or read each Down from a screenshot.
 
 ## Open
 

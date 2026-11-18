@@ -1,5 +1,24 @@
 # HANDOFF — FRAMELOG
 
+## 2026-11-18 test8: DOS Glide release (cost checked, Redguard quit still open)
+
+Done: main 049f4af already held the merge (wip/dosglide2 7992ec1 + priavte pending/framelog-dosglide3.patch, dos/ =
+patched tip byte for byte, test7 section kept); DJGPP v3.4 build clean (only the old lib/dpmi warnings). Cost (86Box
+PII-450 Voodoo Graphics, docs/GLIDE.md): GLFLIP hooked vs unhooked -0.076 % / -0.061 % (2 boots x 4 pairs, logging
+included, 0 lost); SBEMU perf86.sh idle test7 vs test8 exe identical (0.48x, 61 %, 0.0 % lost). Redguard: 2 quit tries
+failed (Esc, Esc = book menu, Return selects, 86Box dropped 2 of 6 Downs) -> GAMES.md stays partial. gv1.sh got the
++Key (held) support the docs already described. test8 zip = test8 DOS exe 03b84a18 + FRAMELOG.TXT (DOS GLIDE section,
+/NOGLIDE, cost, Voodoo 1/2 PC checklist) + test7's WIN98 files (win98/ unchanged; a fresh mingw build differs in bytes)
++ serial-bench HEAD host files. README news + counter 8.
+Open: tag v0.1-test8 + GitHub release (browser), wip/dosglide-2026-11-18 + wip/dosglide2-2026-11-18 + priavte
+wip/framelog-dosglide3-2026-11-18 still to delete (push --delete was refused here: branches page).
+Next 3: (1) Redguard: rig copy of MENU.INI default[6] = 1 (QUIT), Esc, Esc, Return -> /STATUS swaps vs frames;
+(2) real Voodoo 1/2 PC run (FRAMELOG.TXT checklist); (3) static Glide (Carmageddon): grBufferSwap by signature.
+Resume: as the section below; cost rig = `W=/tmp/gc1 LOG=cost EXTRA="glflip.exe GLIDE2X.OVL GLX.OVL DOS4GW.EXE" sh
+dos/glide/gv1.sh 300 /tmp/none GL 'C:\GL\HDPMI32I.EXE -r -x > NUL' 'CD \GL' 'FRAMELOG /AUTO > C:\GL\LOAD.TXT'
+[SET GLOVL=GLX.OVL / GLFLIP 600 50 0 / SET GLOVL= / GLFLIP 600 50 0] x4 'FRAMELOG /STATUS > C:\GL\ST.TXT'`.
+Test downloads: OpenWatcom ow-snapshot (GLFLIP), andrewwutw/build-djgpp v3.4, npm node-unrar-js@2, apt unshield.
+
 ## 2026-11-18 DOS Glide: 3 real games log on 86Box Voodoo Graphics (HDPMI32i DLL-start fix); merged into main
 
 Done: the 3dfx OVLs' Watcom DLL start code aborts under HDPMI32i even without FRAMELOG ("Run-time library initialization

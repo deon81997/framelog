@@ -4,6 +4,7 @@
 # GAMEDIR (host, an extracted demo) is copied to C:\DOSDIR once per fresh image; C:\GL = FRAMELOG + HDPMI32I.
 # T.BAT = the given lines (AUTOEXEC calls it from C:\). After SECS: shot $W/LAST.png, stop, C:\GL\*.TXT -> $W/out.
 # env: W=/tmp/gv1, LOG=name (fllog -> $W/name.csv), REBUILD=1 fresh image, KEYSEQ="25:space 40:Return,Down" (xdotool keys at those seconds, multiple of 5),
+#      KEYSEQ "+Key" = held 0.4 s (polling games miss taps), e.g. "150:+Escape";
 #      MOUSESEQ="30:abs=480,470;click 35:rel=-20,0;click" (xdotool mouse, ; = steps),
 #      SHOTS="t1 t2 ..." extra screenshots at those seconds, OVL=file to copy over C:\DOSDIR\...\GLIDE2X.OVL (OVLDST).
 H=$(cd "$(dirname "$0")" && pwd); W=${W:-/tmp/gv1}; SECS=$1; GD=$2; DD=$3; shift 3
@@ -35,7 +36,9 @@ while [ $t -lt $SECS ]; do
   for s in ${SHOTS:-}; do [ $s = $t ] && sh $R/bin/86run.sh $W/vm shot $W/s$t.png; done
   for kk in ${MOUSESEQ:-}; do [ "${kk%%:*}" = $t ] && { MW=$(DISPLAY=:86 xdotool search --name "^vm - 86Box" | tail -1); for c in $(echo "${kk#*:}" | tr ';' ' '); do
       case $c in click) DISPLAY=:86 xdotool windowactivate --sync $MW click 1;; rel=*) DISPLAY=:86 xdotool mousemove_relative -- $(echo ${c#rel=} | tr , ' ');; abs=*) DISPLAY=:86 xdotool mousemove --window $MW $(echo ${c#abs=} | tr , ' ');; esac; sleep 0.5; done; }; done
-  for kk in ${KEYSEQ:-}; do [ "${kk%%:*}" = $t ] && sh $R/bin/86run.sh $W/vm key $(echo "${kk#*:}" | tr , ' '); done
+  for kk in ${KEYSEQ:-}; do [ "${kk%%:*}" = $t ] && for k in $(echo "${kk#*:}" | tr , ' '); do case $k in
+      +*) KW=$(DISPLAY=:86 xdotool search --name "^vm - 86Box" | tail -1); DISPLAY=:86 xdotool windowactivate --sync $KW keydown ${k#+}; sleep 0.4; DISPLAY=:86 xdotool keyup ${k#+};;
+      *) sh $R/bin/86run.sh $W/vm key $k;; esac; done; done
 done
 sh $R/bin/86run.sh $W/vm shot $W/LAST.png
 sh $R/bin/86run.sh $W/vm stop

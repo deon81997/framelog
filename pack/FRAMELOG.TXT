@@ -27,6 +27,8 @@ OPTIONS
   FRAMELOG /NOVESA          do not watch VESA page flips (INT 10h is
                             then left alone; see VESA below)
   FRAMELOG /NOMETA          send no run info (see RUN INFO below)
+  FRAMELOG /NOGLIDE         do not watch DOS Glide games (INT 21h is
+                            then left alone; see DOS GLIDE below)
   FRAMELOG /STATUS          counters of the loaded copy (flips, frames,
                             lost, bytes sent, host bytes, starts, traps,
                             VESA display-start calls, run info blocks
@@ -57,6 +59,27 @@ VESA (SVGA) GAMES
   FRAMELOG needs about 1.2 KB of DOS memory for this (16 bytes with
   /NOVESA). Use /NOVESA if a VESA game or VESA driver (UNIVBE, SOLVBE)
   misbehaves with FRAMELOG loaded, and report it.
+
+DOS GLIDE (3DFX) GAMES
+  On by default. DOS Glide games load 3dfx's GLIDE2X.OVL; while the game
+  reads that file, FRAMELOG patches grBufferSwap in memory so that every
+  buffer swap is a frame (the file on disk is not changed).
+  Start order, from the game's batch file or by hand:
+       C:\HDPMI\HDPMI32I.EXE -r -x
+       C:\FRAMELOG\FRAMELOG /COM:1      (or the SC55 line, then FRAMELOG)
+       the game (e.g. Extreme Assault: 3DFX.BAT)
+  HDPMI32i DLL-start fix: the 3dfx OVLs' start code expects DOS/4GW and
+  stops with "Run-time library initialization failure: DLL load
+  aborted" under HDPMI32i, with or without FRAMELOG. FRAMELOG patches
+  that start code too, at load time only (/STATUS: "DLL start fixes").
+  So with /NOGLIDE, or without FRAMELOG, such a game still aborts under
+  HDPMI32i - run it without HDPMI32i (its own DOS4GW) then.
+  Not covered yet: games with Glide built into the EXE (no GLIDE2X.OVL,
+  e.g. Carmageddon's CARM3DFX): they run normally but log no frames.
+  Tested only with Voodoo Graphics (Voodoo 1) OVLs 2.31 and 2.42 in
+  86Box; a Voodoo2 OVL is untested.
+  FRAMELOG /STATUS shows "Glide hook on: GLIDE2X.OVL opens, patched
+  loads, grBufferSwap calls ..." - swaps should equal frames logged.
 
 RUN INFO (METADATA)
   On by default. When logging starts, FRAMELOG sends the host a short
@@ -98,6 +121,10 @@ WHICH GAMES LOG (tested in 86Box, Pentium II 450)
     (Only a capture card or a later memory-watch mode can see them.)
   - Doom: flips pages in mode Y, expected to work (not tested yet).
   - Copy-to-screen games that DO wait for the retrace: use /3DA.
+  - DOS Glide (Voodoo Graphics, HDPMI32i): Extreme Assault 1.1.1 demo
+    and Archimedean Dynasty demo (DOS4GW FIGHT3 solo): every swap
+    logged, 0 lost; Redguard demo (RGFX.EXE): logs (18 fps cap);
+    Carmageddon Splat Pack (static Glide): no frames, no crash.
   If fllog.py never prints "header", the game did not flip a page (or,
   with /3DA, wait for a retrace) yet.
 
@@ -110,6 +137,9 @@ MEASURED COST
   waits for vsync): the game keeps its frame rate and SBEMU/SC-55 load is
   unchanged in tests, but its wait loops run slower - leave it off unless
   the game does not flip pages.
+  DOS Glide (test8): GLFLIP 600 frames at 50 fps on Voodoo Graphics,
+  hooked vs not hooked, 2 boots x 4 runs each: -0.08% and -0.06% spare
+  CPU (logging included); the DLL-start fix costs nothing after load.
   SBEMU / SC-55 load is unchanged (no IRQ0, PIT or keyboard hooks).
 
 TEST GAME
@@ -135,6 +165,21 @@ HARDWARE TEST CHECKLIST
       lines FRAMELOG prints when it loads (gpu=, driver=, cpu=).
   [ ] FRAMELOG /STATUS again after the runs: send the output.
   [ ] SBDIAG reports with and without FRAMELOG.
+  VOODOO 1 / VOODOO 2 PC (DOS GLIDE) - the D810 and P5PE-VM have no
+  3dfx card, so this needs a PC with a Voodoo Graphics or Voodoo2 PCI
+  add-on (pass-through cable to the 2D card), MS-DOS 7.1, HDPMI32I.EXE
+  (from NUKED SB-EMU's FILES\HDPMI) and a null-modem cable to the host:
+  [ ] Note the card (Voodoo 1 / 2, MB), 2D card, CPU, chipset.
+  [ ] Extreme Assault demo (or another DOS Glide game) WITHOUT
+      HDPMI32I/FRAMELOG (its own DOS4GW): does it run? note its fps.
+  [ ] HDPMI32I -r -x, FRAMELOG /COM:1, then the same game, logged to a
+      CSV with fllog.py; then FRAMELOG /STATUS: "DLL start fixes" > 0,
+      grBufferSwap calls = frames logged, lost 0?
+  [ ] Same with FRAMELOG /NOGLIDE: the game should abort with "DLL load
+      aborted" (expected) - just confirm the message.
+  [ ] Archimedean Dynasty demo (DOS4GW FIGHT3 solo) logged the same way.
+  [ ] Voodoo2: which GLIDE2X.OVL the game uses (size/date); does it log?
+  [ ] Any 3dfx glitch, hang or sound problem only with FRAMELOG loaded.
   [ ] Send back: all CSV files (name them game-machine.csv), the
       FRAMELOG /STATUS outputs, the SBDIAG reports, and any problems
       seen (hangs, sound glitches, missing frames).
