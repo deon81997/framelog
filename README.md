@@ -35,7 +35,7 @@
 
 <br><br>
 
-<a href="https://github.com/deon81997/framelog/releases/tag/v0.1-test6"><img src="docs/90s/btn-download.gif" alt="Download"></a>
+<a href="https://github.com/deon81997/framelog/releases/tag/v0.1-test7"><img src="docs/90s/btn-download.gif" alt="Download"></a>
 <picture><img src="docs/90s/btn-dos.gif" alt="Powered by DOS 7.1"></picture>
 <picture><img src="docs/90s/btn-win98.gif" alt="Runs on Windows 98 SE"></picture>
 <picture><img src="docs/90s/btn-serial.gif" alt="115200 baud"></picture>
@@ -76,7 +76,9 @@
 </div>
 
 ## What's New
-<picture><img src="docs/90s/new.gif" alt="NEW!"></picture> **11/17/2026: test6.** **Quake II's software renderer is timed too.** It never flips: it copies each frame to the screen with DirectDraw's BltFast, and FRAMELOG now catches that. Quake II scores the same 39.9 fps with and without FRAMELOG. Plus a brand-new **[wiki](https://github.com/deon81997/framelog/wiki)** that explains every switch.
+<picture><img src="docs/90s/new.gif" alt="NEW!"></picture> **11/18/2026: test7.** **Tested on three 3dfx cards.** Quake II (3dfx MiniGL, OpenGL ICD, software), Unreal Tournament (Glide), Expendable, Incoming and 3DMark99 on a Voodoo Graphics, a Voodoo2 and a Voodoo3: FRAMELOG matches the games' own numbers to within 0.1% (about 1% for Expendable, which times in whole seconds). Fixes: Voodoo2 and Voodoo3 get their real names in Glide games, the first DirectDraw game no longer loses its card name, and 3DMark99 on a Voodoo2 add-on card is logged as the Voodoo2. Details on the [Game Coverage](https://github.com/deon81997/framelog/wiki/Game-Coverage) page.
+
+**11/17/2026: test6.** **Quake II's software renderer is timed too.** It never flips: it copies each frame to the screen with DirectDraw's BltFast, and FRAMELOG now catches that. Quake II scores the same 39.9 fps with and without FRAMELOG. Plus a brand-new **[wiki](https://github.com/deon81997/framelog/wiki)** that explains every switch.
 
 **11/17/2026: test5.** **Direct3D 8 and 9 games are timed too.** FRAMELOG now catches `Present` in DirectX 8 and 9 (device and swap chain), with the card name, driver and resolution in the run info. And it met its first real games on a (emulated) Voodoo3 3000: **Quake II** timedemo in OpenGL lands within **1%** of the game's own fps, the **Forsaken** demo within **0.5%**. Cost: under 0.5% CPU, the same as run-to-run noise.
 
@@ -156,7 +158,7 @@ Every line of FRAMELOG, every test rig and every GIF on this page (yes, Vee too)
 
 ## Download Zone
 
-**[FRAMELOG-0.1-test6.zip](https://github.com/deon81997/framelog/releases/tag/v0.1-test6)** (release page) - DOS TSR, Windows 98 loader + hook DLL + test programs, host tools. A test build: please send me your CSVs. Older builds: [releases](https://github.com/deon81997/framelog/releases).
+**[FRAMELOG-0.1-test7.zip](https://github.com/deon81997/framelog/releases/tag/v0.1-test7)** (release page) - DOS TSR, Windows 98 loader + hook DLL + test programs, host tools. A test build: please send me your CSVs. Older builds: [releases](https://github.com/deon81997/framelog/releases).
 
 Host tools live in their own repo: **[serial-bench](https://github.com/deon81997/serial-bench)**.
 

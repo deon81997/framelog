@@ -43,7 +43,7 @@ Then, depending on what you're doing:
 
 ## Download
 
-The current test build is **[v0.1-test6](https://github.com/deon81997/framelog/releases/tag/v0.1-test6)**. It's
+The current test build is **[v0.1-test7](https://github.com/deon81997/framelog/releases/tag/v0.1-test7)**. It's
 still a test build: everything works in emulators, and real-hardware runs are next. If you try it, I'd love to see
 your CSVs!
 

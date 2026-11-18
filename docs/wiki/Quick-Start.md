@@ -10,7 +10,7 @@ This gets you from zero to your first frame-time graph. You need two PCs, one ca
 - **The host PC**: anything that runs Python 3 (Windows or Linux), with a COM port or a cheap USB-serial adapter.
 - **A null-modem cable.** This is the one gotcha. A normal "straight" serial cable won't work; the send and receive
   wires have to be crossed. If nothing arrives on the host, check the cable first.
-- **The zip**: [FRAMELOG-0.1-test6.zip](https://github.com/deon81997/framelog/releases/tag/v0.1-test6). It has a
+- **The zip**: [FRAMELOG-0.1-test7.zip](https://github.com/deon81997/framelog/releases/tag/v0.1-test7). It has a
   `FRAMELOG` folder (DOS), a `WIN98` folder and a `HOST` folder.
 
 <br clear="right">

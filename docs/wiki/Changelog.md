@@ -3,6 +3,23 @@
 Every build so far is a test build. They're on the [releases page](https://github.com/deon81997/framelog/releases),
 and each zip has the DOS, Windows 98 and host parts together.
 
+## test7 (November 18, 2026)
+
+**Three 3dfx cards, eight game setups.** Quake II (3dfx MiniGL, OpenGL ICD, software), Unreal Tournament (Glide),
+Expendable, Incoming and 3DMark99 ran on a Voodoo Graphics, a Voodoo2 and a Voodoo3 in 86Box. FRAMELOG matches the
+games' own numbers to within 0.1%, about 1% for Expendable. The whole list is on [[Game Coverage]].
+
+Fixes in the Windows 98 part:
+
+- A Voodoo2 or Voodoo3 running a Glide 2 game was named "Voodoo Graphics" (their Glide reports the old board type).
+  FRAMELOG now tells them apart.
+- The first DirectDraw game after FRAMELOG starts could lose its card name: Windows took over half a second to answer.
+  FRAMELOG now waits up to 3 seconds, without losing frames.
+- 3DMark99 on a Voodoo2 add-on card was logged as the desktop card, because its title screens come first. When a game
+  starts page-flipping, FRAMELOG now sends the run info again with the 3D card.
+
+The DOS part is the same as test6.
+
 ## test6 (November 17, 2026)
 
 **Quake II's software renderer is logged now.** It turned out Quake II never flips pages in its software mode. It

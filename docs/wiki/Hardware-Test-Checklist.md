@@ -2,7 +2,7 @@
 
 Everything so far was tested in emulators, and real PCs always find new ways to surprise you. This is the list I run
 on my Dell Latitude D810 and ASUS P5PE-VM with
-[v0.1-test6](https://github.com/deon81997/framelog/releases/tag/v0.1-test6). If you'd like to help, run any part of it
+[v0.1-test7](https://github.com/deon81997/framelog/releases/tag/v0.1-test7). If you'd like to help, run any part of it
 on your own machine and send me the results.
 
 Name the CSV files `game-machine.csv` (like `duke-d810.csv`) so they don't get mixed up.

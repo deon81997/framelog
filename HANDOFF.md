@@ -9,6 +9,27 @@ demo GL 640x480 39.0 / 800x600 38.0 fps, soft 320x240 73.4 / 640x480 43.3 fps ov
 640x480 itself 39.9 fps); 86Box PII-450 Voodoo3, test6. Old DOS 86Box CSVs (Duke/ROTT/FLIP) still look-alikes only.
 Wiki Host-Tools edit not posted (wiki push = proxy 403, Chrome offline): priavte wiki/pending/framelog-Host-Tools.md.
 
+## 2026-11-18 test7: Win98 games on Voodoo Graphics / Voodoo2 / Voodoo3 (86Box) + 3 Win98 fixes
+
+VMs (priavte): store-w98qi-86box-v1 (Voodoo Graphics 4 MB add-on + Cirrus 5446, 3dfx 3.01.00), -v2 (Voodoo2 12 MB
+add-on + Cirrus, 3.02.02), -vb (Voodoo Banshee 1.04.00), -v3 unchanged in the store (local copy got the demos). All
+have C:\EXPEND (Expendable demo, unshield of archive.org expendabledemo), C:\INCOMING (archive.org incoming_201401),
+C:\UT (archive.org UTDemo338, Glide, FirstRun=338). Rig: win98/testrig/3dfx (README; go.sh CARD TAG PARTS, table.py;
+results.tgz = the 11/18 runs).
+Results (game / FRAMELOG over the same window, same run): Q2 MiniGL V1 42.7/42.72, V2 41.4/41.36, V3 52.0/52.04; ICD
+V1 39.7/39.70, V2 40.6/40.64, V3 56.9/56.95; Q2 soft Cirrus 24.5/24.56; Incoming V2 41.82/41.82; UT V3 (Hardcore off)
+72.51/72.51, V1/V2 Hardcore on: UT's TimeDemo = real fps x 1.1 (divides by TimeDilation), FRAMELOG = UT/1.1;
+Expendable ~1% (whole-second timer). Off vs on in 86Box swings 5-15% per boot (first game after boot slow): no use
+for cost. 3DMark99: V2 runs to the end (3265/3498), Banshee 4180 -> only 86Box's Voodoo3 crashes. Fails without
+FRAMELOG too: Expendable on V1 hangs black after writing timedemo.txt; Incoming -primary on V3 = garbage + hang;
+G2TEST (pass without FRAMELOG) hung twice on V2 (not looked into).
+Fixes (win98/): FRAMELOG.EXE waits 3 s (was 0.5) for the run info (first DDraw game lost gpu); Glide 2 type 0 split by
+fbiRev (V1 2, V2 261, V3 69634) -> "3dfx Voodoo2" / "3dfx Voodoo Banshee/3"; a Blt-claimed process that starts to Flip
+rebuilds meta + FLSHM.meta_gen -> fresh M block (3DMark99 on V2: change@177 api=ddraw-flip gpu=Voodoo2). Zip = test6
+DOS/HOST + new WIN98 exe/dll/FRAMEL98.TXT.
+Next 3: (1) 3DMark99 per-test fps vs FRAMELOG (Result Browser takes no keys in 86Box: mouse, or real hardware); (2)
+Forsaken + Incoming on V1/V2; (3) real-hardware test7 (HWTEST list in FRAMEL98.TXT).
+
 ## 2026-11-17 Q2 software renderer FIXED (BltFast hook, main 7d006ac); 3DMark99 on 86Box = emulator dead end
 
 Q2 soft (vid_ref soft, sw_mode 3 640x480): ref_soft in a linear mode presents with BltFast(front, 0,0, sysmem

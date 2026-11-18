@@ -21,4 +21,4 @@
 - [[Changelog]]
 - [[Serial Protocol]]
 
-**[Download test6](https://github.com/deon81997/framelog/releases/tag/v0.1-test6)**
+**[Download test7](https://github.com/deon81997/framelog/releases/tag/v0.1-test7)**
