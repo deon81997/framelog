@@ -61,8 +61,9 @@ keys; where both differ the game PC's value is kept as `pc_<key>`. A block after
 ## What a frame is (Win98, header modes bit 4)
 
 One successful present of the logging process, timed at the call (RDTSC on entry, like PresentMon's
-MsBetweenPresents): `IDirectDrawSurface*::Flip` (DirectDraw and Direct3D 5-7 full screen), `Blt` to the primary
-surface with a source surface until the process first flips (windowed DirectDraw/Direct3D), Glide 2/3
+MsBetweenPresents): `IDirectDrawSurface*::Flip` (DirectDraw and Direct3D 5-7 full screen), `Blt` or `BltFast` to the primary
+surface with a source surface until the process first flips (windowed DirectDraw/Direct3D; Quake II's software
+renderer presents with BltFast), Glide 2/3
 `grBufferSwap`, OpenGL `wglSwapBuffers` (any DLL exporting it: opengl32, 3dfx MiniGL) or gdi32 `SwapBuffers`.
 Calls that fail (`DDERR_WASSTILLDRAWING` ...) and calls nested inside another hooked present on the same thread do
 not count. The first process that presents while FRAMELOG runs is logged until it exits (then `E`, and the next
