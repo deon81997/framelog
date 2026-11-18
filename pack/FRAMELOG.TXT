@@ -44,7 +44,10 @@ HOST PC (Windows or Linux)
   2. In the HOST folder:
        py fllog.py COM3 -o run.csv --label NAME
      (or LOG.BAT COM3 run.csv NAME; on Linux python3 and /dev/ttyUSB0)
-     Start it before or while the game runs.
+     Start it before or while the game runs. Once the game PC answers
+     it prints "header", then (test9) one status line, redrawn every
+     second: frames so far, fps now / average, last and slowest frame
+     time, lost frames (--no-live turns it off).
   3. Play / run the demo. Press Ctrl+C on the host when done.
   4. Stats and graph, one or more runs (several = comparison):
        py flstats.py a.csv b.csv --png g.png

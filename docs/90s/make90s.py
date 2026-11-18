@@ -176,7 +176,7 @@ def nav():
         button(n, a, b, bg, fg, left, anim or None)
 
 
-def counter(n=8):
+def counter(n=9):
     digits = '%06d' % n
     font = F('DejaVuSansMono-Bold.ttf', 18)
     w, h = 6 * 16 + 4, 26

@@ -1,5 +1,22 @@
 # HANDOFF — FRAMELOG
 
+## 2026-11-18 test9: live status line in the host logger (fllog.py)
+
+Done: fllog.py class Live: one status line redrawn once a second (\r, stderr, console only by default; --live forces it,
+--no-live / -q turn it off): frames, fps over the last second (game-PC TSC deltas, not host time) and since the start,
+last and slowest frame of the last second, lost (D records); "no frame in the last second (loading? paused?)" when the
+game stalls; "connected, waiting for the first frame". Single run and suite (say() ends the line first, so "header" /
+"run 1/1" / "port closed" print on their own lines). Counts reset on H and B only (suite: they run on across a gap split).
+Tested with a fake game PC on socket:// (H, B, 60 fps F records with a 50 ms frame every 30, 1.3 s pause, D 2, E on X):
+single run, suite (gap 1), piped run = no status line (rigs unchanged). CSV output unchanged (same rows as without it).
+Docs: pack/FRAMELOG.TXT host step 2, pack/LOG.BAT usage, HOST/README.md fllog row, README news + counter 9.
+test9 zip = test8 zip with HOST/fllog.py, HOST/README.md, HOST/LOG.BAT, FRAMELOG/FRAMELOG.TXT swapped (game PC and
+WIN98 files byte-identical to test8).
+SERIAL-BENCH NOT UPDATED: this session could not attach deon81997/serial-bench (push refused). The change is
+priavte pending/serial-bench-live-test9.patch (diff -u of fllog.py + README.md against test8's host files): apply it
+to serial-bench before the next mkzip.sh, or the live line is lost from test10.
+Next 3: as below (Redguard quit, real Voodoo 1/2 run, static Glide), plus the serial-bench patch.
+
 ## 2026-11-18 test8: DOS Glide release (cost checked, Redguard quit still open)
 
 Done: main 049f4af already held the merge (wip/dosglide2 7992ec1 + priavte pending/framelog-dosglide3.patch, dos/ =
