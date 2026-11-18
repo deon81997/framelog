@@ -9,7 +9,7 @@ functions come from NUKED SB-EMU's docs/90s/make90s.py, same author).
 import math, os, random, sys
 from PIL import Image, ImageDraw, ImageFont
 
-OUT = os.path.dirname(os.path.abspath(__file__))
+OUT = os.environ.get('OUT90S') or os.path.dirname(os.path.abspath(__file__))  # OUT90S=dir: write elsewhere (serial-bench)
 FD = '/usr/share/fonts/truetype/dejavu/'
 F = lambda n, s: ImageFont.truetype(FD + n, s)
 random.seed(1998)
@@ -40,11 +40,10 @@ def starfield(w, h, n=60):
 
 
 # ---------------------------------------------------------------- WordArt title
-def title():
+def title(text='FRAMELOG', name='title.gif'):
     w, h = 720, 120
     stars = starfield(w, h, 90)
     font = F('DejaVuSerif-Bold.ttf', 70)
-    text = 'FRAMELOG'
     frames = []
     for k in range(12):
         im = Image.new('RGB', (w, h), (0, 0, 32))
@@ -60,7 +59,7 @@ def title():
             d.text((x, y), ch, font=font, fill=rainbow(((j + k) / 12) % 1))
             x += d.textlength(ch, font=font)
         frames.append(im)
-    save(frames, 'title.gif', 110)
+    save(frames, name, 110)
 
 
 def construction():
@@ -408,6 +407,39 @@ def parts():
     part('part-opengl.gif', 'OPENGL', 'ICD + MiniGL', gl, (90, 0, 0))
     part('part-vesa.gif', 'VESA', '4F07h flips', vesa, (64, 0, 96))
     part('part-capture.gif', 'CAPTURE', 'VGA grabber', capture, (96, 48, 0))
+
+
+def serialbench():
+    """serial-bench's page: its own title + the shared art (OUT90S=serial-bench/docs/90s)"""
+    title('SERIAL-BENCH', 'title.gif')
+    for fn in ('construction', 'new', 'star', 'buttons', 'nav', 'bar', 'award', 'vee', 'vee_hello', 'vee_walk', 'scope', 'cable', 'parts'):
+        globals()[fn]()
+    report()
+
+
+def report():
+    """a little browser window showing flreport's GPU comparison bars"""
+    w, h = 300, 150
+    small, font = F('DejaVuSansMono-Bold.ttf', 9), F('DejaVuSans-Bold.ttf', 9)
+    gpus = [('Voodoo3 3000', 58, (255, 160, 0)), ('GeForce 6800', 91, (0, 200, 0)), ('Radeon X300', 74, (220, 0, 0)),
+            ('S3 Trio64', 21, (0, 120, 255))]
+    frames = []
+    for k in range(14):
+        im = Image.new('RGB', (w, h), (192, 192, 192))
+        d = crisp(ImageDraw.Draw(im))
+        d.rectangle([0, 0, w - 1, h - 1], outline=(255, 255, 255)); d.line([w - 1, 0, w - 1, h - 1, 0, h - 1], fill=(64, 64, 64))
+        d.rectangle([3, 3, w - 4, 14], fill=(0, 0, 128))
+        d.text((6, 4), 'compare.html (example) - Netscape', font=small, fill=(255, 255, 255))
+        d.rectangle([6, 18, w - 7, h - 7], fill=(255, 255, 255))
+        d.text((12, 22), 'EXAMPLE: timedemo avg fps', font=font, fill=(0, 0, 128))
+        for i, (g, v, c) in enumerate(gpus):
+            y = 40 + i * 24
+            d.text((12, y + 3), g, font=small, fill=(0, 0, 0))
+            bw = int(min(1, k / 10) * v * 1.6)
+            d.rectangle([96, y, 96 + bw, y + 14], fill=c, outline=(0, 0, 0))
+            if k >= 10: d.text((100 + bw, y + 2), str(v), font=small, fill=(0, 0, 0))
+        frames.append(im)
+    save(frames, 'report.gif', 120)
 
 
 # ---------------------------------------------------------------- news ticker (no release asset needed)
