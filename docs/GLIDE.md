@@ -78,6 +78,13 @@ efliks/nostalgic-glide-demo `53 56 57 55 8B 5C 24 14` (8 bytes) - both pass the 
 - SBEMU + SC-55 (testrig/perf86.sh idle, FLIP 70 fps + MIDI): same as the exe without the hook - SC55LOG 0.48x,
   SBDIAG 61 % CPU, 0.0 % lost, longest interrupt 3.57 ms.
 
+## Real games (86Box PII-450, Voodoo Graphics, HDPMI32i), 11/18
+
+- The OVL's Watcom DLL start code needs DOS/4GW as host (INT 21h 35E9h hand-over, FF00h check) and aborts under HDPMI32i
+  with or without FRAMELOG; glhook.c gl_dllfix patches both while the OVL is read (thunks at GL_DLL, /STATUS "DLL start
+  fixes 2"). Extreme Assault 1.1.1 demo (OVL 2.31): 3706/3706 frames; Archimedean Dynasty demo (2.42): 6552/6552;
+  Redguard demo: logs; Carmageddon (static Glide): no OVL, 0 frames, no crash. Rig: dos/glide/gv1.sh.
+
 ## Open
 
 - A real DOS Glide game with Tenberry's loader (does its DLL init run under HDPMI32i? does it read the OVL page by

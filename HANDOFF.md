@@ -1,5 +1,31 @@
 # HANDOFF — FRAMELOG
 
+## 2026-11-18 DOS Glide: 3 real games log on 86Box Voodoo Graphics (HDPMI32i DLL-start fix); NOT pushed here
+
+Done: the 3dfx OVLs' Watcom DLL start code aborts under HDPMI32i even without FRAMELOG ("Run-time library initialization
+failure: DLL load aborted": INT 21h 35E9h DOS/4GW loader hand-over missing, then ring-0 / fixed-selector path). glhook.c
+gl_dllfix now patches it in the read buffers like grBufferSwap (signatures in the 512 bytes after the LE entry: 35E9h ->
+thunk ES=EBX=PSP via AH=62h; FF00h DOS/4G check -> AL=1, GS=0); /STATUS "DLL start fixes 2". Same start code in OVL 2.31,
+2.42 and the VRUSH one. Rig: dos/glide/gv1.sh (store-dos71, 86Box P3B-F PII-450, Cirrus + Voodoo Graphics 4 MB, KEYSEQ
+with +Key = held key, SHOTS, LOG=fllog), dos/glide/csvbuck.py (fps per time bucket).
+Results (serial-bench docs/GAMES.md, fixtures tests/fixtures/86box-v1-dosglide): Extreme Assault 1.1.1 3706 swaps = 3706
+frames, 0 lost, mission ~29.5 fps; Archimedean Dynasty (`DOS4GW FIGHT3 solo`) 6552 = 6552, 0 lost, 95-148 fps; Redguard
+(unshield data1.cab on the host instead of a Win98 install; no OVL in the demo -> AD's 2.42) gameplay 18.2 fps, 3829 frames,
+exit not scripted; Carmageddon Splat Pack (static Glide) = negative case: 0 opens, 0 frames, clean quit.
+State: commit "DOS Glide: fix the OVL's Watcom DLL start code under HDPMI32i ..." on top of wip/dosglide2-2026-11-18
+(7992ec1) exists only as priavte branch wip/framelog-dosglide3-2026-11-18 pending/framelog-dosglide3.patch (this session's
+framelog attach was refused). wip/dosglide2 is NOT a fast-forward of main any more (main 54492f0 has the test7 Win98
+fixes): merge, don't ff. Demos: priavte store-dosglide-demos (+SHA256SUMS). No cost run yet for gl_dllfix (load-time only).
+Next 3: (1) attach framelog, `git am` the patch on wip/dosglide2, merge into main, delete wip/dosglide-2026-11-18 + wip/dosglide2;
+(2) test8 zip + FRAMELOG.TXT DOS Glide section (HDPMI32I + FRAMELOG before the game; no Voodoo in P5PE-VM/D810);
+(3) static Glide (Carmageddon): grBufferSwap by byte signature in the EXE/BDD reads.
+Resume: clone priavte store-dos71 + store-86rig + store-dosglide-demos + store-personal-1.0.0-beta.130-usb (HDPMI32I),
+DJGPP v3.4, `W=/tmp/gv1 LOG=x sh dos/glide/gv1.sh 225 /tmp/dl/xa_inst XA 'C:\GL\HDPMI32I.EXE -r -x > NUL'
+'C:\GL\FRAMELOG /AUTO > C:\GL\LOAD.TXT' 'CD \XA' 'CALL 3DFX.BAT' 'C:\GL\FRAMELOG /STATUS > C:\GL\ST.TXT'` (XA: install layout
+= ROOT\* + DATA, DATA.SFX, DRIVERS, INSTALL beside it; keys as in GAMES.md).
+Test downloads: archive.org xa_demo.exe, addemo.exe, REDGUARD-Demo.rar, splatdem.zip (SHA256 OK); npm node-unrar-js@2;
+apt unshield; open-watcom-v2 bld/clib/startup (dllstart.asm, read-only reference).
+
 ## 2026-11-18 DOS Glide hook WORKS on 86Box Voodoo3 (GLIDE2X.OVL grBufferSwap patched at load; no release yet)
 
 Findings (details + result codes: docs/GLIDE.md): DOS Glide 2 games load GLIDE2X.OVL = an LE DLL (Watcom
