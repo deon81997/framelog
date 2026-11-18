@@ -1,12 +1,14 @@
 /* FRAMELOG.EXE - DOS frame-time logger TSR (DJGPP, resident under HDPMI32i, coexists with NUKED SB-EMU).
  *
- *   FRAMELOG [/COM:n|hex[,baud]] [/AUTO] [/3DA[:ms]] [/NOVESA] [/NOMETA]   load (default COM1, 115200); /AUTO = log from now, no host byte
+ *   FRAMELOG [/COM:n|hex[,baud]] [/AUTO] [/3DA[:ms]] [/NOVESA] [/NOMETA] [/NOGLIDE]   load (default COM1, 115200); /AUTO = log from now, no host byte
  *       needed; /3DA = frames are the vertical retraces the game waits for (input status 3DAh polled), for games
  *       that copy to the screen instead of flipping pages. Opt-in: every 3DAh read is trapped (costly in vsync loops).
  *       VESA: INT 10h 4F07h (set display start, BL 00h/80h/02h/82h) = a page flip too (real-mode INT 10h vector,
  *       which DOS extenders reflect protected-mode INT 10h to); /NOVESA leaves INT 10h alone.
  *       Metadata: after the H header an 'M' block (gpu, driver, cpu from VBE 4F00h + CPUID at load; res/depth/mode of
  *       the current mode), and a fresh block when the game sets a mode (INT 10h AH=00h / 4F02h); /NOMETA = none.
+ *       Glide: GLIDE2X.OVL's grBufferSwap = a frame (INT 21h stub patches it while the game loads the OVL,
+ *       glide/glhook.c, docs/GLIDE.md); /NOGLIDE leaves INT 21h alone.
  *   FRAMELOG /STATUS                        print the resident copy's counters
  *
  * Traps CRTC 3D4h/3D5h (protected-mode programs, HDPMI port trap). A write to start-address register 0Ch/0Dh =
@@ -402,7 +404,7 @@ static int find_resident(FLSTATE *out)
 
 static void usage(void)
 {
-    puts("FRAMELOG [/COM:n|hex[,baud]] [/AUTO] [/3DA] [/NOVESA] [/NOMETA] - load the frame-time logger (default COM1,115200)\n"
+    puts("FRAMELOG [/COM:n|hex[,baud]] [/AUTO] [/3DA] [/NOVESA] [/NOMETA] [/NOGLIDE] - load the frame-time logger (default COM1,115200)\n"
          "  /3DA[:ms]: frames = vertical retraces the game waits for (copy-to-screen games), costs CPU;\n"
          "     ms = how long the game must be away from the retrace port for a new frame (default 6)\n"
          "  /NOVESA: don't hook INT 10h (VESA 4F07h display-start calls are page flips by default)\n"

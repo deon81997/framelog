@@ -14,8 +14,8 @@
  * also what makes the low-memory thunk reachable with absolute addresses. */
 #include "glide/glstub.h"
 #define GL_BUF     4096               /* DOS read buffer for our own parsing */
-#define GL_THUNK   192                /* thunk offset in the block (stub at 0) */
-#define GL_IO      256                /* DOS buffer offset (name copy + reads; thunk <= 64 bytes) */
+#define GL_THUNK   320                /* thunk offset in the block (stub at 0) */
+#define GL_IO      384                /* DOS buffer offset (name copy + reads; thunk <= 64 bytes) */
 _Static_assert(sizeof glstub_bin <= GL_THUNK, "glstub.asm grew into the thunk");
 static DPMI_REG gl_open_reg, gl_read_reg;
 static uint16_t gl_seg;
