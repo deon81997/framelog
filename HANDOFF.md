@@ -36,9 +36,10 @@ Docs: pack/FRAMELOG.TXT host step 2, pack/LOG.BAT usage, HOST/README.md fllog ro
 test9 zip = test8 zip with HOST/fllog.py, HOST/README.md, HOST/LOG.BAT, FRAMELOG/FRAMELOG.TXT swapped (game PC and
 WIN98 files byte-identical to test8).
 serial-bench main 872162c has the same fllog.py/README.md + tests/test_live.py (3 tests; full suite 69, the one
-failure test_games "Forsaken demo" was there before). Tag v0.1-test9 + GitHub release NOT made yet (tag push hangs,
-API refused, no browser): make both in a browser on main ee01bc3 with release/FRAMELOG-0.1-test9.zip.
-Next 3: as below (Redguard quit, real Voodoo 1/2 run, static Glide), plus the test9 tag/release.
+failure test_games "Forsaken demo" was there before). Released by the new .github/workflows/release.yml (user-approved): on a push that changes release/*.zip it
+makes tag v<ver> + the release with the zip if not out yet (notes = the README news line). Tag v0.1-test9 = e80ea07
+(main then: test9 zip + the static Glide source commits, which are not in the test9 zip).
+Next 3: as below (Redguard quit, real Voodoo 1/2 run, static Glide), (release: just commit the new zip to release/).
 
 ## 2026-11-18 test8: DOS Glide release (cost checked, Redguard quit still open)
 
