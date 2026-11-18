@@ -22,7 +22,7 @@ lost, longest IRQ 3.57 ms (old 3.64 / 3.57). Bug found + fixed on the way: the s
 Gotcha: the OVL's Watcom start code ABORTS under HDPMI32i ("Run-time library initialization failure: DLL load
 aborted" - INT 21h 35E9h hand-over that DOS/4GW answers itself); Glide 2.61 runs without it (GLFLIP skips it unless
 GLINIT=1). A real game may hit this under HDPMI32i with or without FRAMELOG - first thing to check.
-State: wip/dosglide-2026-11-18 + this section on main (code on main too, see the commit). No zip/tag taken.
+State: branch wip/dosglide2-2026-11-18 (fast-forward of main 6019295; old wip/dosglide-2026-11-18 = first prototype, delete). Not on main yet: the session could not push to main. No zip/tag taken.
 Next 3: (1) a real DOS Glide game with the V3 OVL on 86Box (user: which game/demo do you own? e.g. Tomb Raider 3dfx,
 Screamer Rally, Archimedean Dynasty, Redguard; or the 3dfx Glide 2.x SDK DOS test programs) -> /STATUS result 0 +
 fllog; (2) test7 zip + FRAMELOG.TXT section + hardware checklist (P5PE-VM/D810 have no Voodoo: needs a Voodoo
