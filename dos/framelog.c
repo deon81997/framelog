@@ -1,12 +1,14 @@
 /* FRAMELOG.EXE - DOS frame-time logger TSR (DJGPP, resident under HDPMI32i, coexists with NUKED SB-EMU).
  *
- *   FRAMELOG [/COM:n|hex[,baud]] [/AUTO] [/3DA[:ms]] [/NOVESA] [/NOMETA]   load (default COM1, 115200); /AUTO = log from now, no host byte
+ *   FRAMELOG [/COM:n|hex[,baud]] [/AUTO] [/3DA[:ms]] [/NOVESA] [/NOMETA] [/NOGLIDE]   load (default COM1, 115200); /AUTO = log from now, no host byte
  *       needed; /3DA = frames are the vertical retraces the game waits for (input status 3DAh polled), for games
  *       that copy to the screen instead of flipping pages. Opt-in: every 3DAh read is trapped (costly in vsync loops).
  *       VESA: INT 10h 4F07h (set display start, BL 00h/80h/02h/82h) = a page flip too (real-mode INT 10h vector,
  *       which DOS extenders reflect protected-mode INT 10h to); /NOVESA leaves INT 10h alone.
  *       Metadata: after the H header an 'M' block (gpu, driver, cpu from VBE 4F00h + CPUID at load; res/depth/mode of
  *       the current mode), and a fresh block when the game sets a mode (INT 10h AH=00h / 4F02h); /NOMETA = none.
+ *       Glide: GLIDE2X.OVL's grBufferSwap = a frame (INT 21h stub patches it while the game loads the OVL,
+ *       glide/glhook.c, docs/GLIDE.md); /NOGLIDE leaves INT 21h alone.
  *   FRAMELOG /STATUS                        print the resident copy's counters
  *
  * Traps CRTC 3D4h/3D5h (protected-mode programs, HDPMI port trap). A write to start-address register 0Ch/0Dh =
@@ -115,7 +117,7 @@ static void put_meta(void)
 
 static void start_log(uint64_t now)
 {
-    struct __attribute__((packed)) { uint8_t ver, src; uint32_t hz; uint8_t modes, res; } h = { 1, 0, St.tsc_hz, (mode3da ? 2 : 1) | (St.vesa ? 4 : 0), 0 };
+    struct __attribute__((packed)) { uint8_t ver, src; uint32_t hz; uint8_t modes, res; } h = { 1, 0, St.tsc_hz, (mode3da ? 2 : 1) | (St.vesa ? 4 : 0) | (St.glide ? 0x20 : 0), 0 };
     put_rec('H', &h, 8);
     meta_dirty = 0;
     if (!nometa) put_meta();
@@ -157,6 +159,8 @@ static void pump(void)
 
 #define FL_PMMAGIC 0x464Cu           /* EAX >> 16 of the VBE PM thunk's IN 3D4h (see vbepm_cb) */
 static void vesa_flip(void);
+static void gl_flip(void);
+#define FL_GLMAGIC 0x474Cu           /* 'GL' = EAX >> 16 of the Glide grBufferSwap thunk's IN 3D4h (glide/glhook.c) */
 
 static void frame_event(uint64_t now)
 {
@@ -196,6 +200,7 @@ static uint32_t crtc_trap(uint32_t port, uint32_t val, uint32_t out)
     if (!out) {
         uint8_t v = HDPMIPT_UntrappedIO_Read((uint16_t)port);
         if (port == 0x3D4 && (val >> 16) == FL_PMMAGIC && St.vesa) vesa_flip();   /* VBE PM SetDisplayStart thunk */
+        else if (port == 0x3D4 && (val >> 16) == FL_GLMAGIC && St.glide) gl_flip();   /* Glide grBufferSwap thunk */
         return v;
     }
     uint8_t v = (uint8_t)val;
@@ -278,6 +283,8 @@ static void mode_cb(void)
     St.modesets++;
     meta_dirty = 1;
 }
+
+#include "glide/glhook.c"
 
 static QEMM_IODT iodt[2] = { {0x3D4, crtc_trap}, {0x3D5, crtc_trap} };
 static QEMM_IODT iodt3da[1] = { {0x3DA, vsync_trap} };
@@ -397,24 +404,26 @@ static int find_resident(FLSTATE *out)
 
 static void usage(void)
 {
-    puts("FRAMELOG [/COM:n|hex[,baud]] [/AUTO] [/3DA] [/NOVESA] [/NOMETA] - load the frame-time logger (default COM1,115200)\n"
+    puts("FRAMELOG [/COM:n|hex[,baud]] [/AUTO] [/3DA] [/NOVESA] [/NOMETA] [/NOGLIDE] - load the frame-time logger (default COM1,115200)\n"
          "  /3DA[:ms]: frames = vertical retraces the game waits for (copy-to-screen games), costs CPU;\n"
          "     ms = how long the game must be away from the retrace port for a new frame (default 6)\n"
          "  /NOVESA: don't hook INT 10h (VESA 4F07h display-start calls are page flips by default)\n"
          "  /NOMETA: send no metadata (gpu, driver, cpu, resolution: 'M' records after the header)\n"
+         "  /NOGLIDE: don't hook INT 21h (DOS Glide: GLIDE2X.OVL's grBufferSwap = a frame by default)\n"
          "FRAMELOG /STATUS                       - counters of the loaded copy\n"
          "Start/stop logging from the host PC (serial-bench: fllog.py). Needs HDPMI32i.");
 }
 
 int main(int argc, char **argv)
 {
-    const char *com = "COM1"; int autostart = 0, status = 0, novesa = 0;
+    const char *com = "COM1"; int autostart = 0, status = 0, novesa = 0, noglide = 0;
     for (int i = 1; i < argc; i++) {
         if (!strncasecmp(argv[i], "/COM:", 5)) com = argv[i] + 5;
         else if (!strcasecmp(argv[i], "/AUTO")) autostart = 1;
         else if (!strcasecmp(argv[i], "/STATUS")) status = 1;
         else if (!strcasecmp(argv[i], "/NOVESA")) novesa = 1;
         else if (!strcasecmp(argv[i], "/NOMETA")) nometa = 1;
+        else if (!strcasecmp(argv[i], "/NOGLIDE")) noglide = 1;
         else if (!strncasecmp(argv[i], "/3DA", 4) && (argv[i][4] == 0 || argv[i][4] == ':')) {
             mode3da = 1; if (argv[i][4]) arm_ms = (uint32_t)atoi(argv[i] + 5);
             if (arm_ms < 1 || arm_ms > 100) { usage(); return 1; }
@@ -434,6 +443,10 @@ int main(int argc, char **argv)
                r.vesa ? "on" : "off (/NOVESA)", (unsigned long)r.vesa_calls, (unsigned long)r.vbepm, (unsigned long)r.vbepm_skip);
         if (r.meta) printf("  metadata on: blocks sent %lu, mode sets seen %lu (INT 10h AH=00h / 4F02h)\n", (unsigned long)r.metas, (unsigned long)r.modesets);
         else puts("  metadata off (/NOMETA)");
+        if (r.glide) printf("  Glide hook on: GLIDE2X.OVL opens %lu, patched loads %lu, grBufferSwap calls %lu, last result %lu%s, DLL start fixes %lu\n",
+                            (unsigned long)r.glide_opens, (unsigned long)r.glide_patched, (unsigned long)r.glide_swaps,
+                            (unsigned long)r.glide_err, r.glide_err ? " (not hooked, docs/GLIDE.md)" : "", (unsigned long)r.glide_dllfix);
+        else puts("  Glide hook off (/NOGLIDE)");
         return 0;
     }
     if (status) { puts("FRAMELOG is not loaded."); return 1; }
@@ -479,12 +492,13 @@ int main(int argc, char **argv)
         asm volatile("sti");
         St.vesa = 1;
     }
+    if (!noglide && gl_install()) { puts("FRAMELOG: Glide hook failed (try /NOGLIDE)"); return 4; }
     if (autostart) start_log(rdtsc());
     _farpokel(_dos_ds, blk, FL_MAGIC); _farpokel(_dos_ds, blk + 4, dsbase + (uint32_t)&St);
     _farpokew(_dos_ds, 0x4F0, seg); _farpokew(_dos_ds, 0x4F2, FL_SIG);
-    printf("FRAMELOG %s loaded: UART %X %lu baud%s, CPU %lu MHz, %s (protected-mode games)%s%s%s\n",
+    printf("FRAMELOG %s loaded: UART %X %lu baud%s, CPU %lu MHz, %s (protected-mode games)%s%s%s%s\n",
            FL_VER, base, (unsigned long)U.baud, U.fifo == 16 ? "" : " (no FIFO)", (unsigned long)(St.tsc_hz / 1000000),
-           mode3da ? "frames = vsync waits (3DAh trapped, /3DA)" : "frames = page flips (CRTC 3D4h-3D5h)", St.vesa ? ", VESA 4F07h" : "", nometa ? ", no metadata" : "", autostart ? ", logging now" : "");
+           mode3da ? "frames = vsync waits (3DAh trapped, /3DA)" : "frames = page flips (CRTC 3D4h-3D5h)", St.vesa ? ", VESA 4F07h" : "", St.glide ? ", Glide" : "", nometa ? ", no metadata" : "", autostart ? ", logging now" : "");
     if (!nometa) { fputs(meta_pre, stdout); printf("  VBE modes known: %d, current mode: %s\n", vtabn, vmode >= 0 ? "VESA" : "VGA"); }
     fflush(stdout);
     DPMI_TSR();

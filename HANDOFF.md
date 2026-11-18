@@ -1,5 +1,62 @@
 # HANDOFF — FRAMELOG
 
+## 2026-11-18 DOS Glide: 3 real games log on 86Box Voodoo Graphics (HDPMI32i DLL-start fix); merged into main
+
+Done: the 3dfx OVLs' Watcom DLL start code aborts under HDPMI32i even without FRAMELOG ("Run-time library initialization
+failure: DLL load aborted": INT 21h 35E9h DOS/4GW loader hand-over missing, then ring-0 / fixed-selector path). glhook.c
+gl_dllfix now patches it in the read buffers like grBufferSwap (signatures in the 512 bytes after the LE entry: 35E9h ->
+thunk ES=EBX=PSP via AH=62h; FF00h DOS/4G check -> AL=1, GS=0); /STATUS "DLL start fixes 2". Same start code in OVL 2.31,
+2.42 and the VRUSH one. Rig: dos/glide/gv1.sh (store-dos71, 86Box P3B-F PII-450, Cirrus + Voodoo Graphics 4 MB, KEYSEQ
+with +Key = held key, SHOTS, LOG=fllog), dos/glide/csvbuck.py (fps per time bucket).
+Results (serial-bench docs/GAMES.md, fixtures tests/fixtures/86box-v1-dosglide): Extreme Assault 1.1.1 3706 swaps = 3706
+frames, 0 lost, mission ~29.5 fps; Archimedean Dynasty (`DOS4GW FIGHT3 solo`) 6552 = 6552, 0 lost, 95-148 fps; Redguard
+(unshield data1.cab on the host instead of a Win98 install; no OVL in the demo -> AD's 2.42) gameplay 18.2 fps, 3829 frames,
+exit not scripted; Carmageddon Splat Pack (static Glide) = negative case: 0 opens, 0 frames, clean quit.
+State: on main (merge of wip/dosglide2-2026-11-18 + the DLL-start fix + this section, applied from priavte
+pending/framelog-dosglide3.patch; real merge, main had the test7 Win98 fixes; dos/ = the tested branch tip, win98/ = main
+54492f0). wip/dosglide-2026-11-18 + wip/dosglide2-2026-11-18 are merged: delete them on the branches page if still listed.
+Demos: priavte store-dosglide-demos (+SHA256SUMS). No cost run yet for gl_dllfix (load-time only). No zip yet.
+Next 3: (1) 86Box PII-450 cost check of the merged FRAMELOG.EXE (perf86.sh, Glide off = same as test7);
+(2) test8 zip + FRAMELOG.TXT DOS Glide section (HDPMI32I + FRAMELOG before the game; no Voodoo in P5PE-VM/D810);
+(3) static Glide (Carmageddon): grBufferSwap by byte signature in the EXE/BDD reads.
+Resume: clone priavte store-dos71 + store-86rig + store-dosglide-demos + store-personal-1.0.0-beta.130-usb (HDPMI32I),
+DJGPP v3.4, `W=/tmp/gv1 LOG=x sh dos/glide/gv1.sh 225 /tmp/dl/xa_inst XA 'C:\GL\HDPMI32I.EXE -r -x > NUL'
+'C:\GL\FRAMELOG /AUTO > C:\GL\LOAD.TXT' 'CD \XA' 'CALL 3DFX.BAT' 'C:\GL\FRAMELOG /STATUS > C:\GL\ST.TXT'` (XA: install layout
+= ROOT\* + DATA, DATA.SFX, DRIVERS, INSTALL beside it; keys as in GAMES.md).
+Test downloads: archive.org xa_demo.exe, addemo.exe, REDGUARD-Demo.rar, splatdem.zip (SHA256 OK); npm node-unrar-js@2;
+apt unshield; open-watcom-v2 bld/clib/startup (dllstart.asm, read-only reference).
+
+## 2026-11-18 DOS Glide hook WORKS on 86Box Voodoo3 (GLIDE2X.OVL grBufferSwap patched at load; no release yet)
+
+Findings (details + result codes: docs/GLIDE.md): DOS Glide 2 games load GLIDE2X.OVL = an LE DLL (Watcom
+`system dos4g dll`) through 3dfx glide2x.lib's `call __loadme` thunks + Tenberry's DLL loader (plain DOS/4GW 1.97:
+"error 2302: DLL modules not supported"); exports `_GRBUFFERSWAP@4` (upper case, stdcall). On a Voodoo3 a swap is a
+command-FIFO packet: no port I/O, no CRTC write -> needs a code hook. Voodoo1-era games link Glide statically (not covered).
+Hook (like the VBE PM thunk): RM INT 21h stub (dos/glide/glstub.asm) sees open of ...\GLIDE2X.OVL by a PM program
+(caller CS = the DPMI host's, learnt at load, so COPY never gets patched bytes), gl_open_cb parses the LE (export ->
+file offset, prologue >= 6 bytes, no fixups there), builds a 32-bit thunk (IN 3D4h with 'GL' 474Ch in EAX high ->
+crtc_trap -> gl_flip) and gl_read_cb writes `FF 15 ptr` + NOPs into the read buffer before DOS/4GW copies it up.
+Default on, /NOGLIDE; /STATUS line; header modes bit 5 (PROTOCOL.md). Voodoo3 Glide sets VESA 111h itself, so the M
+record already says res=640x480 depth=16.
+Test: GLFLIP.EXE (dos/glide/glflip.c + glload.c = small LE loader standing in for Tenberry's, OpenWatcom v2,
+dos/glide/mk.sh) + dos/glide/gl86.sh (store-dos71 image, 86Box P3B-F PII-450 voodoo3_3k_agp, V3 OVL 2.61.00.0439 from
+the store-w98qi-86box-v3 image C:\WINDOWS). fllog: 599/600 frames, 50.00 fps, 20.00-20.25 ms, 0 lost, modes=37.
+Cost: 4x hooked vs 4x unhooked (GLX.OVL) alternating in one boot, 600 frames @ 50 fps with /AUTO: spare loops -0.07 %.
+SBEMU (perf86.sh idle, SC-55 + FLIP 70 fps, 86Box PII-450): new = old main exe: SC55LOG 0.48x, SBDIAG 61 % CPU, 0.0 %
+lost, longest IRQ 3.57 ms (old 3.64 / 3.57). Bug found + fixed on the way: the stub returned with retf 2 -> caller got IF=0
+(BIOS ticks stopped: SC55LOG 0 s, SBEMU hung at start); now iret with the caller's flags + DOS's CF etc.
+Gotcha: the OVL's Watcom start code ABORTS under HDPMI32i ("Run-time library initialization failure: DLL load
+aborted" - INT 21h 35E9h hand-over that DOS/4GW answers itself); Glide 2.61 runs without it (GLFLIP skips it unless
+GLINIT=1). A real game may hit this under HDPMI32i with or without FRAMELOG - first thing to check.
+State: branch wip/dosglide2-2026-11-18 (fast-forward of main 6019295; old wip/dosglide-2026-11-18 = first prototype, delete). Not on main yet: the session could not push to main. No zip/tag taken.
+Next 3: (1) a real DOS Glide game with the V3 OVL on 86Box (user: which game/demo do you own? e.g. Tomb Raider 3dfx,
+Screamer Rally, Archimedean Dynasty, Redguard; or the 3dfx Glide 2.x SDK DOS test programs) -> /STATUS result 0 +
+fllog; (2) test7 zip + FRAMELOG.TXT section + hardware checklist (P5PE-VM/D810 have no Voodoo: needs a Voodoo
+PC); (3) statically linked Glide: grBufferSwap by byte signature in the EXE reads, same thunk.
+Test downloads: OpenWatcom v2 snapshot (github open-watcom/open-watcom-v2 Current-build ow-snapshot.tar.xz ->
+/tmp/dl/ow), dgVoodoo 1.x source (dege-diosg/dgVoodoo, OVL layout), sezero/glide (glimport.asm = __loadme thunks),
+efliks/nostalgic-glide-demo (Voodoo1 SST1 OVL, checked with dos/glide/leinfo.py).
+
 ## 2026-11-18 serial-bench: flreport = Retro GPU Shootout (host only, framelog code untouched)
 
 serial-bench d82a78e: flreport.py writes index (summary table per GPU), game-*.html per game across GPUs + CPUs

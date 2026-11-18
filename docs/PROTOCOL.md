@@ -28,7 +28,8 @@ Readers resync by scanning for `A5h` and dropping candidates whose checksum fail
 | `E` | frames u32, lost u32 | 8 | end: totals since `B` |
 | `M` | seq u8, text 15 bytes | 16 | metadata text chunk (see below) |
 
-`modes` bits: 0 CRTC start-address trap, 1 3DAh vsync poll, 2 VESA 4F07h, 3 real-mode (/RM), 4 Win98 swap hook.
+`modes` bits: 0 CRTC start-address trap, 1 3DAh vsync poll, 2 VESA 4F07h, 3 real-mode (/RM), 4 Win98 swap hook,
+5 DOS Glide grBufferSwap hook (docs/GLIDE.md).
 
 ## `M` metadata (run info)
 
