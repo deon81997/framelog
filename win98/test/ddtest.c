@@ -55,7 +55,8 @@ int WINAPI WinMain(HINSTANCE hi, HINSTANCE hp, LPSTR cmd, int show)
         fx.dwFillColor = i & 255;
         if (off) IDirectDrawSurface_Blt(off, NULL, NULL, NULL, DDBLT_COLORFILL | DDBLT_WAIT, &fx); /* not counted */
         if (!blt) {
-            if (back) IDirectDrawSurface_Blt(back, NULL, off, NULL, DDBLT_WAIT, NULL);  /* not counted */
+            RECT q = {0, 0, 320, 240};
+            if (back) IDirectDrawSurface_Blt(back, &q, off, NULL, DDBLT_WAIT, NULL);  /* not counted */
             do hr = IDirectDrawSurface_Flip(pri, NULL, 0); while (hr == DDERR_WASSTILLDRAWING); /* busy flips count once */
             if (hr == DDERR_SURFACELOST) { IDirectDrawSurface_Restore(pri); continue; }
             if (i == 5 && off) IDirectDrawSurface_Blt(pri, NULL, off, NULL, DDBLT_WAIT, NULL); /* after a flip: not counted */

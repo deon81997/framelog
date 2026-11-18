@@ -12,7 +12,7 @@
 #include <string.h>
 #include "flshared.h"
 
-#define VERSION "0.2-w98"
+#define VERSION "0.1-w98"
 
 static FLSHM *shm;
 static HANDLE hmap, hcom = INVALID_HANDLE_VALUE, hstop;

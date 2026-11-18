@@ -19,12 +19,15 @@ static void tp_args(const char *cmd)
     tp_spin = strstr(cmd, "spin") != NULL;
     while (*a == ' ') a++;
     /* numbers anywhere on the line: first = frames, second = fps */
-    while (*a) {
-        if (*a >= '0' && *a <= '9') {
-            long v = strtol(a, &e, 10);
-            if (tp_n == 300 && v) tp_n = (int)v; else if (v) tp_fps = (int)v;
-            a = e;
-        } else a++;
+    {
+        int k = 0;
+        while (*a) {
+            if (*a >= '0' && *a <= '9') {
+                long v = strtol(a, &e, 10);
+                if (v > 0) { if (k++ == 0) tp_n = (int)v; else tp_fps = (int)v; }
+                a = e;
+            } else a++;
+        }
     }
     QueryPerformanceFrequency(&tp_f);
     tp_per = (double)tp_f.QuadPart / tp_fps;

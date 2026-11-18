@@ -192,19 +192,34 @@ static void dd_frame(void *s, unsigned __int64 t, DWORD api)
     }
 }
 
+/* g_ddtid: DirectDraw calls itself through the vtables (a clipped Blt to the primary = one Blt per clip rect):
+   only the outermost call on a thread counts */
+static volatile DWORD g_ddtid;
 #define FW(k)                                                                                                         \
     static HRESULT WINAPI fw##k(void *s, void *tg, DWORD f)                                                           \
     {                                                                                                                 \
         unsigned __int64 t = fl_rdtsc();                                                                              \
-        HRESULT hr = ((FlipFn)shm->orig[k])(s, tg, f);                                                                \
-        if (hr == DD_OK) { g_flipseen = 1; dd_frame(s, t, FL_API_DDFLIP); }                                           \
+        DWORD me = GetCurrentThreadId(), outer = g_ddtid != me;                                                       \
+        HRESULT hr;                                                                                                   \
+        if (outer) g_ddtid = me;                                                                                      \
+        hr = ((FlipFn)shm->orig[k])(s, tg, f);                                                                        \
+        if (outer) {                                                                                                  \
+            g_ddtid = 0;                                                                                              \
+            if (hr == DD_OK) { g_flipseen = 1; dd_frame(s, t, FL_API_DDFLIP); }                                       \
+        }                                                                                                             \
         return hr;                                                                                                    \
     }                                                                                                                 \
     static HRESULT WINAPI bw##k(void *s, void *r, void *src, void *sr, DWORD f, void *fx)                             \
     {                                                                                                                 \
         unsigned __int64 t = fl_rdtsc();                                                                              \
-        HRESULT hr = ((BltFn)shm->orig[k])(s, r, src, sr, f, fx);                                                     \
-        if (hr == DD_OK && !g_flipseen && src && is_primary(s)) dd_frame(s, t, FL_API_DDBLT);                         \
+        DWORD me = GetCurrentThreadId(), outer = g_ddtid != me;                                                       \
+        HRESULT hr;                                                                                                   \
+        if (outer) g_ddtid = me;                                                                                      \
+        hr = ((BltFn)shm->orig[k])(s, r, src, sr, f, fx);                                                             \
+        if (outer) {                                                                                                  \
+            g_ddtid = 0;                                                                                              \
+            if (hr == DD_OK && !g_flipseen && src && is_primary(s)) dd_frame(s, t, FL_API_DDBLT);                     \
+        }                                                                                                             \
         return hr;                                                                                                    \
     }
 FW(0) FW(1) FW(2) FW(3) FW(4) FW(5) FW(6) FW(7) FW(8) FW(9) FW(10) FW(11) FW(12) FW(13) FW(14) FW(15)

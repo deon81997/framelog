@@ -16,15 +16,19 @@ game files are ever replaced or modified.
    - Optional modes: 3DAh vsync-poll trap (mode 13h games, opt-in, expensive);
      INT 10h AX=4F07h hook (VESA flips); `/RM` via JEMM/QEMM for real-mode games.
    - The trap handler only stores a TSC timestamp in a ring buffer.
-2. **Win98 background loader + hook DLL** (FRAPS-style)
-   - Loader installs a global window hook (SetWindowsHookEx) so the hook DLL
-     loads into every GUI process. Closing the loader turns it off.
-   - Hook DLL patches in memory: DirectDraw/D3D Flip, OpenGL wglSwapBuffers,
-     Glide grBufferSwap (glide2x/glide3x).
-   - On each swap: RDTSC -> lock-free queue -> worker thread writes to COM.
-   - Fallback: `framelog game.exe` starts the game suspended, injects the DLL,
-     resumes it.
-   - No proxy DLLs; ddraw.dll / opengl32.dll / glide*.dll are never replaced.
+2. **Win98 loader + hook DLL** (`win98/`: FRAMELOG.EXE + FLHOOK.DLL, Windows 95/98/ME)
+   - Loader installs global window hooks (WH_CBT + WH_GETMESSAGE) so the hook DLL loads into every GUI
+     process; the first process that presents is logged until it exits. Q / Esc / `FRAMELOG /STOP` unhooks.
+   - DirectDraw/D3D 5-7: `Flip` and `Blt` to the primary through the surface vtables (DDRAW.DLL's shared,
+     writable vtables on Win9x) -> stubs in shared memory -> the process's wrapper. Glide 2/3 `grBufferSwap`
+     and `wglSwapBuffers` (opengl32, 3dfx MiniGL): 5-byte JMP in the process's own copy; gdi32 `SwapBuffers`
+     and `LoadLibrary` through the importers' IAT (gdi32/kernel32 code is shared and read-only on Win9x).
+   - Per present: RDTSC -> lock-free shared ring -> the loader's loop writes the COM port; 'M' run info
+     (game, gpu/driver, res/depth, api, cpu) once per start.
+   - `framelog game.exe [args]`: that game only; FLHOOK.DLL is also patched in at its entry point
+     (CreateProcess suspended + a JMP to a shared-memory stub that LoadLibrary's it - no CreateRemoteThread on 9x).
+   - No proxy DLLs; ddraw.dll / opengl32.dll / glide*.dll are never replaced. Cost on 86Box PII-450 within
+     noise (+-0.5% spare CPU) for DirectDraw, D3D 6, OpenGL and Glide test programs (win98/test).
 3. **Shared binary serial protocol**: header (CPU clock from TSC calibration,
    source DOS/Win98), per-frame record (sync byte, frame count, TSC delta),
    start/stop markers.
@@ -58,9 +62,10 @@ Measured cost on a Pentium II 450: ~0.35% of the game's CPU at 70 fps, no change
 ## Goal and order
 
 Close to a one-stop shop for benchmarking retro GPUs (DOS + Win98).
-Done: DOS TSR (CRTC trap, /3DA, VESA hook), host logger + stats, run metadata (host side), suites, HTML reports,
-capture analyzer (flcap.py, needs a real capture to confirm).
-Next: Win98 hook DLL (DirectDraw/D3D, Glide, OpenGL), game PC sends metadata ('M' record), DOS Glide, /RM.
+Done: DOS TSR (CRTC trap, /3DA, VESA hook, 'M' run info), Win98 hook DLL (DirectDraw/D3D 5-7, Glide 2/3,
+OpenGL, 'M' run info), host logger + stats, run metadata, suites, HTML reports, capture analyzer (flcap.py, needs
+a real capture to confirm).
+Next: hardware results (DOS + Win98 games: Quake II, Forsaken, 3DMark99), D3D8/9 Present, DOS Glide, /RM.
 
 ## Repositories
 

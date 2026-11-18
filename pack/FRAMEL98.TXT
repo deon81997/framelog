@@ -1,0 +1,76 @@
+FRAMELOG for Windows 98 - frame-time logger for Win98 games over serial
+=======================================================================
+
+WHAT IT DOES
+
+FRAMELOG.EXE + FLHOOK.DLL time every frame a Windows 98 game presents and send the times over a serial cable to a
+second PC (serial-bench fllog.py, same as the DOS TSR). Per frame the game pays one RDTSC and a push into a shared
+ring; FRAMELOG.EXE sends the ring out on the COM port. Nothing on disk is changed: no proxy DLLs, no replaced files,
+everything is patched in memory and put back when FRAMELOG quits.
+
+What counts as a frame (one per successful call):
+  DirectDraw / Direct3D 5-7   IDirectDrawSurface Flip (full screen); Blt to the primary surface (windowed)
+  Glide 2 / Glide 3            grBufferSwap (glide2x.dll / glide3x.dll)
+  OpenGL                       wglSwapBuffers in any DLL that has it (OPENGL32.DLL, 3dfx MiniGL such as 3DFXGL.DLL
+                               or an OPENGL32.DLL in the game folder) and gdi32 SwapBuffers
+Failed calls (DDERR_WASSTILLDRAWING ...) and presents nested inside another present do not count. A game that both
+flips and blits to the primary is counted by its flips only.
+
+INSTALL (GAME PC)
+
+Copy FRAMELOG.EXE and FLHOOK.DLL into one folder (for example C:\FRAMELOG). Windows 95/98/ME only (NT/2000/XP: no).
+
+USE
+
+1. Connect the null-modem cable, start fllog.py on the host (see the DOS FRAMELOG.TXT, HOST PC).
+2. Either
+     FRAMELOG [/COM:n] [/BAUD:n]            then start the game the normal way
+   or
+     FRAMELOG [/COM:n] [/BAUD:n] C:\GAMES\QUAKE2\QUAKE2.EXE +timedemo 1 +map demo1.dm2
+   The first way logs the first program that presents a frame, until it exits, then the next one (good for a suite
+   of timedemos). The second way logs only that game, also patches FLHOOK.DLL in at the game's entry point (so
+   games without a normal window are caught too; /NOINJECT = window hooks only) and quits when the game exits.
+3. Quit with Q, Esc or Ctrl+C in FRAMELOG's window, or FRAMELOG /STOP from a batch file. Always quit FRAMELOG this way
+   before you shut down (it puts the DirectDraw tables back).
+
+Options: /COM:n (default 1), /BAUD:n (default 115200), /LOG (FRAMELOG.LOG next to the exe: what got hooked, which
+process logs), /NOINJECT, /Q (no status line), /STOP.
+
+The host starts and stops logs with S / X like the DOS TSR. S takes effect at the game's next present (that present
+is the start mark, so N presents give N-1 frames). The status line shows LOG / ARM / idle, the process, frames and
+lost frames.
+
+RUN INFO (sent once per start as the M record, see docs/PROTOCOL.md)
+
+game = exe name; gpu / driver = DirectDraw device identifier of the game's DirectDraw (DirectX 6 or newer), the
+Glide version + board type, or the OpenGL renderer / vendor / version; res / depth = the primary surface at the first
+present (Glide 2: the Glide screen size, 16 bit; OpenGL: the window size + desktop depth); api, cpu (CPUID name +
+MHz), os, hook. What you give fllog.py (--gpu ..., suite INI) wins over these.
+
+LIMITS
+
+- Windows 9x only. DirectX 8/9 games (IDirect3DDevice8/9::Present) are not hooked yet.
+- Without a game on the command line, FLHOOK.DLL loads into programs through window hooks: a program that opens no
+  window and reads no messages is only caught when started as "FRAMELOG game.exe".
+- DOS games in a Win98 DOS box: use the DOS FRAMELOG instead (in a DOS-only boot).
+- Only one FRAMELOG at a time; one process logs at a time.
+- If FRAMELOG is killed (End Task) while a DirectDraw game runs, quit that game before starting FRAMELOG again.
+
+MEASURED COST (86Box Pentium II 450, Cirrus 5446, Windows 98 SE, test programs in WIN98\TEST, spare-CPU loops
+with FRAMELOG logging vs without)
+  DDTEST flip 30 fps -0.5%, DDTEST blt +0.5%, D3DTEST (D3D 6 RGB) +1.5%, GLTEST (OpenGL) +0.06%, G2TEST (Glide 2)
+  +0.35%: all within run-to-run noise (about +-0.5%).
+
+TEST PROGRAMS (TEST folder; N frames at FPS, a result line in <name>.TXT; "spin" = busy-wait and count spare loops)
+  DDTEST [blt] [spin] N FPS     DirectDraw 640x480x8 page flips, or windowed Blt to the primary (blt)
+  D3DTEST [hal] [spin] N FPS    Direct3D 6, 640x480x16, RGB software device (hal = the card's HAL)
+  GLTEST [wgl] [spin] N FPS     OpenGL window 320x240, gdi32 SwapBuffers (wgl = opengl32 wglSwapBuffers)
+  G2TEST [nowin] [spin] N FPS   Glide 2 640x480 with your glide2x.dll (nowin = no window: needs FRAMELOG G2TEST.EXE)
+The host should see N-1 frames at 1000/FPS ms each (median), 0 lost.
+
+HARDWARE TEST CHECKLIST (please send the CSVs + FRAMELOG.LOG)
+  1. FRAMELOG /LOG, then DDTEST 600 30, D3DTEST hal 300 30, GLTEST 300 30, G2TEST 600 60 (Voodoo): each run N-1
+     frames, median 33.3 / 33.3 / 33.3 / 16.7 ms, gpu/driver lines right.
+  2. A real game timedemo: Quake II (timedemo 1, OpenGL / 3dfx MiniGL), Forsaken demo (D3D), 3DMark99 (D3D):
+     frames vs the game's own fps number.
+  3. FRAMELOG game.exe for one of them, and Q to quit while the game still runs (the game must keep running).

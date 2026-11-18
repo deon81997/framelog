@@ -45,13 +45,28 @@ Optional; old hosts skip it (unknown type = junk, the checksum still frames it).
   `mode=X` when chain-4 is off; text modes send `mode=text 03h` and no `res`); `cpu` = CPUID brand string, else
   `<vendor> family F model M stepping S`, then `, N MHz` (the TSC rate of `H`). A mode set (INT 10h AH=00h / 4F02h) while
   logging = a fresh block before the next frame.
-- Win98 DLL (planned): DirectDraw GetDeviceIdentifier (description, driver version), the display mode at Flip/Present,
-  the exe name for `game`.
+- Win98 (FRAMELOG.EXE + FLHOOK.DLL, once per start): `game` (exe name), `gpu` + `driver` (DirectDraw GetDeviceIdentifier of the
+  game's own DirectDraw object; Glide 2 grGlideGetVersion + grSstQueryHardware type; Glide 3 grGetString; OpenGL
+  GL_RENDERER / GL_VENDOR + GL_VERSION), `res` + `depth` (DirectDraw: the primary surface at the first present; Glide 2:
+  grSstScreenWidth/Height, 16; OpenGL: the window's client size + desktop depth), `api` (ddraw-flip, ddraw-blt, glide2,
+  glide3, opengl), `d3d=1` (a Direct3D DLL is loaded), `gl_dll` (the OpenGL DLL, e.g. 3dfxgl.dll), `pid`, `cpu`
+  (CPUID brand string, or the family/model name + TSC MHz), `os`, `hook` (FRAMELOG version).
 - Cost: 19 bytes on the wire per chunk, once per start or mode set; nothing per frame.
 
 Host rule (serial-bench fllog.py): what the user gives (options, `--meta`, suite INI) wins; game-PC values fill empty
 keys; where both differ the game PC's value is kept as `pc_<key>`. A block after the first frame becomes one
 `# change@N=key=value ...` CSV line (`key=` = gone) before frame N.
+
+## What a frame is (Win98, header modes bit 4)
+
+One successful present of the logging process, timed at the call (RDTSC on entry, like PresentMon's
+MsBetweenPresents): `IDirectDrawSurface*::Flip` (DirectDraw and Direct3D 5-7 full screen), `Blt` to the primary
+surface with a source surface until the process first flips (windowed DirectDraw/Direct3D), Glide 2/3
+`grBufferSwap`, OpenGL `wglSwapBuffers` (any DLL exporting it: opengl32, 3dfx MiniGL) or gdi32 `SwapBuffers`.
+Calls that fail (`DDERR_WASSTILLDRAWING` ...) and calls nested inside another hooked present on the same thread do
+not count. The first process that presents while FRAMELOG runs is logged until it exits (then `E`, and the next
+`S` arms the next process). `S` takes effect at the next present: that present is the `B` moment (not a frame), so
+N presents after `S` give N-1 `F` records.
 
 ## What a frame is (DOS)
 

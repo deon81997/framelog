@@ -1,5 +1,30 @@
 # HANDOFF — FRAMELOG
 
+## 2026-11-17 Win98 hook DLL DONE (test4 zip): FRAMELOG.EXE + FLHOOK.DLL, all APIs pass in QEMU + 86Box
+
+Code: win98/ (framelog.c loader + COM worker, flhook.c DLL, lde.c, flshared.h, makefile, tools/chkimp98.py +
+w98exports.txt from the VM's system DLLs), docs: pack/FRAMEL98.TXT (in the zip as WIN98/), PROTOCOL.md (Win98 frame
+definition + M keys), serial-bench GAMES.md rows. release/FRAMELOG-0.1-test4.zip = DOS (incl. the M record from the
+parallel DOS chat, rebuilt with DJGPP) + WIN98/ + HOST/ (now also flmeta.py, flreport.py: fllog imports flmeta).
+How (Win98 facts from win98/test/probe.c): DDRAW.DLL, GDI32, KERNEL32 load in the shared arena, code read-only
+(VirtualProtect/WriteProcessMemory fail) but DDRAW's vtables are shared + writable -> loader points Flip/Blt slots of
+Surface1-7 vtables at stubs in a named file mapping (same address in every process); a stub looks up fs:[30h] in the
+procs table -> that process's FLHOOK wrapper, else the original. DDRAW rewrites its vtables whenever a process loads it
+-> loader re-hooks every 5 ms + DLL at attach/CBT. opengl32/glide/3dfxgl are private -> 5-byte JMP + trampoline (LDE);
+gdi32 SwapBuffers + kernel32 LoadLibraryA/ExA via IAT. Launch mode: CREATE_SUSPENDED, JMP at the exe entry -> shared
+stub: LoadLibrary(FLHOOK) + VirtualProtect + copy the 5 bytes back.
+Tests (win98/testrig/README.md): QEMU T1 6/6 (ddflip, ddblt, d3d6 RGB, GL gdi, GL wgl, Glide2 stand-in) 199/199 at the
+set rate; T3 launch mode incl. a windowless Glide program; T5 host X then S mid-game (67 + 302 frames); T6 FRAMELOG /STOP
+while 3 games present (all finish). 86Box PII-450 Cirrus (P1): spare loops with vs without: flip -0.5%, blt +0.5%,
+D3D6 +1.5%, GL +0.06%, Glide +0.35% (noise ~0.5%) -> on, no switch needed.
+Not done / next 3 steps: (1) user's hardware results (FRAMEL98.TXT checklist; real Voodoo Glide never run - only the
+stand-in; no 3dfx driver binaries in the VMs, only INFs); (2) real games: Quake II demo, Forsaken demo, 3DMark99 not
+downloadable here (only github.com reachable) - asked the user; (3) D3D8/9 (IDirect3DDevice8/9::Present vtable, same
+stub idea) + 86Box Voodoo3 with the user's 3dfx drivers. Known limits: windowless games only in launch mode; FRAMELOG
+killed (End Task) while a DDraw game runs -> last FLHOOK instance restores the vtables (untested path).
+Rigs: q98.sh/t1.sh (QEMU, ~40 s boot), r86.sh (86Box, ~4 min); restore store-w98qi-qemu, store-w98qi-86box,
+store-86rig, store-86box-roms (86Box needs apt librtmidi6).
+
 ## 2026-11-17 serial-bench (host side, parallel chat) - metadata, suites, reports, M record, capture analyzer done
 
 serial-bench main d761b5f (66 unit tests, `python3 -m unittest discover -s tests`), framelog untouched except this section:
@@ -23,7 +48,7 @@ Later (user 11/17, when serial is done and fully working): network logging - Win
   (~64 frames per packet, same per-frame cost), host fllog.py UDP listener; DOS via packet driver after that
   (per-NIC testing, IRQ clashes with SBEMU).
 
-## RESUME HERE (2026-11-17 handoff) - GOAL: one-stop retro GPU benchmark. Next: Win98 hook DLL
+## RESUME HERE (2026-11-17 handoff) - GOAL: one-stop retro GPU benchmark. Win98 hook DLL DONE (top section)
 
 Repos: deon81997/framelog (this repo: DOS TSR, Win98 loader/DLL in win98/, protocol, HANDOFF = the only handoff),
 deon81997/serial-bench (host tools: logger, stats, reports, later capture analyzer; no handoff of its own),
