@@ -1,6 +1,7 @@
 #!/bin/sh
 # mkbat.sh CARD PARTS... > GO.BAT - Win98 game batch for the 3dfx VMs (v1/v2/v3): each part runs once without and once
 # with FRAMELOG (resident, D:\FRAMELOG.EXE). Parts: mgl icd soft exp inc ut. Results on D: (Q2*.LOG, EXP*.TXT, INC*.TXT, UT*.LOG).
+# A part written 1:NAME runs only with FRAMELOG (a game that hangs at exit goes last: 1:exp on Voodoo1).
 # exp needs autook.sh (Enter on its timedemo box), ut needs utkeys.sh (console timedemo + exit) running on the host.
 # CARD: v1|v2 = add-on (D3D = secondary device, ICD = standalone 3dfxogl/3dfxvgl), v3 = Voodoo3 (registered ICD).
 C=$1; shift
@@ -15,8 +16,8 @@ part() { # $1 part $2 suffix
     inc) echo "cd \\INCOMING"; echo "if exist fps.txt del fps.txt"; echo "start /w gameindex.exe $SEC -nosound"; echo "copy fps.txt D:\\INC$2.TXT > nul";;
   esac; }
 { echo "@echo off"; echo "C:"
-  for p in "$@"; do part $p 0; done
+  for p in "$@"; do case $p in 1:*) ;; *) part $p 0;; esac; done
   echo "start D:\\FRAMELOG.EXE /COM:1 /LOG /Q"; echo "choice /t:y,8 /n > nul"
-  for p in "$@"; do part $p 1; done
+  for p in "$@"; do part ${p#1:} 1; done
   echo "choice /t:y,3 /n > nul"; echo "D:\\FRAMELOG.EXE /STOP"; echo "choice /t:y,5 /n > nul"
   echo "C:\\WINDOWS\\RUNDLL32.EXE USER.EXE,ExitWindows"; } | sed 's/$/\r/'
