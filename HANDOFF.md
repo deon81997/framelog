@@ -1,5 +1,14 @@
 # HANDOFF — FRAMELOG
 
+## 2026-11-18 serial-bench: flreport = Retro GPU Shootout (host only, framelog code untouched)
+
+serial-bench d82a78e: flreport.py writes index (summary table per GPU), game-*.html per game across GPUs + CPUs
+(avg / 1% / 0.1% low bars, frame-time overlay, percentile curves, ranked table, run notes), gpu-*.html, compare.html,
+run-*.html (metadata, stats, histogram, CSV), shootout.csv/.json; 90s look. Real fixtures tests/fixtures/86box-v3: Q2
+demo GL 640x480 39.0 / 800x600 38.0 fps, soft 320x240 73.4 / 640x480 43.3 fps over the whole log incl. load (Q2 soft
+640x480 itself 39.9 fps); 86Box PII-450 Voodoo3, test6. Old DOS 86Box CSVs (Duke/ROTT/FLIP) still look-alikes only.
+Wiki Host-Tools edit not posted (wiki push = proxy 403, Chrome offline): priavte wiki/pending/framelog-Host-Tools.md.
+
 ## 2026-11-17 Q2 software renderer FIXED (BltFast hook, main 7d006ac); 3DMark99 on 86Box = emulator dead end
 
 Q2 soft (vid_ref soft, sw_mode 3 640x480): ref_soft in a linear mode presents with BltFast(front, 0,0, sysmem
