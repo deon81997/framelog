@@ -3,7 +3,7 @@
 <table>
 <tr>
 <td align="center" width="140"><picture><img src="docs/90s/vee.gif" width="120" alt="Vee, the FRAMELOG mascot"></picture></td>
-<td><b>A note from the webmaster!!</b> The code, the docs and all the art on this page were made by <b>Claude</b>, an AI by <a href="https://www.anthropic.com/">Anthropic</a>, working with me: I pick what to build and test every build on my real PCs, Claude writes it and checks it in emulators first. Sister site: <a href="https://github.com/deon81997/NUKED-SBEMU">NUKED SB-EMU</a> (a Roland SC-55 for your DOS games) - FRAMELOG runs right next to it!!</td>
+<td><b>A note from the webmaster</b> The code, the docs and all the art on this page were made by <b>Claude</b>, an AI by <a href="https://www.anthropic.com/">Anthropic</a>, working with me: I pick what to build and test every build on my real PCs, Claude writes it and checks it in emulators first. Sister site: <a href="https://github.com/deon81997/NUKED-SBEMU">NUKED SB-EMU</a> (a Roland SC-55 for your DOS games) - FRAMELOG runs right next to it</td>
 </tr>
 </table>
 
@@ -13,15 +13,15 @@
 
 <picture><img src="docs/90s/title.gif" width="560" alt="FRAMELOG"></picture>
 
-<h2>~*~ Welcome to my Retro GPU Benchmark Page!!! ~*~</h2>
+<h2>~*~ Welcome to my Retro GPU Benchmark Page ~*~</h2>
 
-<i>Times every frame your DOS and Windows 98 games draw. No overlay, no FRAPS, no patched files!!</i>
+<i>Times every frame your DOS and Windows 98 games draw. No overlay, no FRAPS, no patched files</i>
 
 <br><br>
 
-<picture><img src="docs/90s/vee-hello.gif" width="400" alt="Vee says: Hi!! I am Vee. I time every frame your game draws!!"></picture>
+<picture><img src="docs/90s/vee-hello.gif" width="400" alt="Vee says: Hi. I am Vee. I time every frame your game draws"></picture>
 
-<h3>~ What can it time?? ~</h3><sub>(click a card!!)</sub><br>
+<h3>~ What can it time? ~</h3><sub>(click a card)</sub><br>
 <a href="#cool-features"><img src="docs/90s/part-dos.gif" width="110" alt="DOS page flips"></a>
 <a href="#cool-features"><img src="docs/90s/part-vesa.gif" width="110" alt="VESA flips"></a>
 <a href="#cool-features"><img src="docs/90s/part-glide.gif" width="110" alt="Glide 2 and 3"></a><br>
@@ -31,7 +31,7 @@
 
 <br><br>
 
-<sub>this page is ALWAYS under construction... please come back soon!! :-)</sub>
+<sub>this page is ALWAYS under construction... please come back soon :-)</sub>
 
 <br><br>
 
@@ -49,7 +49,7 @@
 <table>
 <tr>
 <td align="center"><b>Test build counter:</b><br><picture><img src="docs/90s/counter.gif" width="200" alt="000005"></picture><br><sub>test builds and counting!</sub></td>
-<td align="center"><picture><img src="docs/90s/scope.gif" width="300" alt="A frame-time graph scrolling by"></picture><br><sub>(what your host PC sees: every frame, live!!)</sub></td>
+<td align="center"><picture><img src="docs/90s/scope.gif" width="300" alt="A frame-time graph scrolling by"></picture><br><sub>(what your host PC sees: every frame, live)</sub></td>
 <td align="center"><picture><img src="docs/90s/award.gif" width="96" alt="Cool GPU Site of the Day award"></picture></td>
 </tr>
 </table>
@@ -64,7 +64,7 @@
 
 <br>
 
-<b>~ SITE MAP ~</b> <sub>(click a button!!)</sub>
+<b>~ SITE MAP ~</b> <sub>(click a button)</sub>
 
 <table>
 <tr><td><a href="#whats-new"><img src="docs/90s/nav-news.gif" width="88" alt="What's new"></a></td><td><a href="#what-is-this"><img src="docs/90s/nav-what.gif" width="88" alt="What is this?"></a></td><td><a href="#cool-features"><img src="docs/90s/nav-features.gif" width="88" alt="Features"></a></td><td><a href="#my-game-scores"><img src="docs/90s/nav-games.gif" width="88" alt="Game scores"></a></td></tr>
@@ -75,17 +75,16 @@
 
 </div>
 
-## What's NEW!!
+## What's New
+<picture><img src="docs/90s/new.gif" alt="NEW!"></picture> **11/17/2026: test6.** **Quake II's software renderer is timed too.** It never flips: it copies each frame to the screen with DirectDraw's BltFast, and FRAMELOG now catches that. Quake II scores the same 39.9 fps with and without FRAMELOG. Plus a brand-new **[wiki](https://github.com/deon81997/framelog/wiki)** that explains every switch.
 
-<picture><img src="docs/90s/new.gif" alt="NEW!"></picture> **11/17/2026: test6.** **Quake II's software renderer is timed too!!** It never flips: it copies each frame to the screen with DirectDraw's BltFast, and FRAMELOG now catches that. Quake II scores the same 39.9 fps with and without FRAMELOG. Plus a brand-new **[wiki](https://github.com/deon81997/framelog/wiki)** that explains every switch!!
+**11/17/2026: test5.** **Direct3D 8 and 9 games are timed too.** FRAMELOG now catches `Present` in DirectX 8 and 9 (device and swap chain), with the card name, driver and resolution in the run info. And it met its first real games on a (emulated) Voodoo3 3000: **Quake II** timedemo in OpenGL lands within **1%** of the game's own fps, the **Forsaken** demo within **0.5%**. Cost: under 0.5% CPU, the same as run-to-run noise.
 
-**11/17/2026: test5.** **Direct3D 8 and 9 games are timed too!!** FRAMELOG now catches `Present` in DirectX 8 and 9 (device and swap chain), with the card name, driver and resolution in the run info. And it met its first real games on a (emulated) Voodoo3 3000: **Quake II** timedemo in OpenGL lands within **1%** of the game's own fps, the **Forsaken** demo within **0.5%**. Cost: under 0.5% CPU, the same as run-to-run noise.
+**11/17/2026: test4.** **Windows 98.** FRAMELOG.EXE + FLHOOK.DLL time DirectDraw, Direct3D 5-7, Glide 2/3 and OpenGL games, and send the run info (game, card, driver, resolution, CPU) once per start. Nothing on disk is changed: everything is patched in memory and put back when you quit.
 
-**11/17/2026: test4.** **Windows 98!!** FRAMELOG.EXE + FLHOOK.DLL time DirectDraw, Direct3D 5-7, Glide 2/3 and OpenGL games, and send the run info (game, card, driver, resolution, CPU) once per start. Nothing on disk is changed: everything is patched in memory and put back when you quit.
+**11/17/2026: test3.** **VESA games.** Games that flip pages through VESA (INT 10h 4F07h or the VBE 2.0 protected-mode call, like Duke Nukem 3D in 640x480) are timed, and the DOS side sends run info too (card, VBE version, mode, CPU).
 
-**11/17/2026: test3.** **VESA games!!** Games that flip pages through VESA (INT 10h 4F07h or the VBE 2.0 protected-mode call, like Duke Nukem 3D in 640x480) are timed, and the DOS side sends run info too (card, VBE version, mode, CPU).
-
-## What is this??
+## What is this?
 
 <picture><img src="docs/90s/cable.gif" width="300" align="right" alt="Game PC and host PC joined by a null-modem cable, bits flying"></picture>
 
@@ -107,8 +106,7 @@ Measured cost on a Pentium II 450: within run-to-run noise (about 0.5%) for ever
 - **Benchmark suites** - one batch of timedemos, one CSV per run, an HTML page per GPU and a side-by-side page.
 - **Launch mode** - `FRAMELOG game.exe` catches even games that never open a normal window.
 
-## My Game Scores!!
-
+## My Game Scores
 <picture><img src="docs/90s/btn-3dfx.gif" align="right" alt="Tested on a Voodoo3"></picture>
 
 Emulated Pentium II 450 + Voodoo3 3000 AGP (3dfx 1.02.18 drivers, DirectX 9.0c) in 86Box. FRAMELOG's fps vs what the game itself says:
@@ -120,11 +118,9 @@ Emulated Pentium II 450 + Voodoo3 3000 AGP (3dfx 1.02.18 drivers, DirectX 9.0c) 
 | Quake II 3.14 demo | `timedemo 1`, software renderer 640x480 | 39.9 fps | 39.9 fps (the 632 demo frames) | 0 |
 | D3D8TEST / D3D9TEST | 40 fps, 200 frames | 25.00 ms | 199 frames at 25.00 ms | 0 |
 
-Not yet: 3DMark99 (it crashes in the emulator even without FRAMELOG, so it waits for real hardware). **Real hardware results coming soon!!**
+Not yet: 3DMark99 (it crashes in the emulator even without FRAMELOG, so it waits for real hardware). **Real hardware results coming soon.**
 
-## My Test Lab!!
-
-
+## My Test Lab
 - **Dell Latitude D810** - Pentium M 2 GHz, ATI Mobility Radeon X300, Windows 98 SE + MS-DOS 7.1 (the main target)
 - **ASUS P5PE-VM** - Intel 865G, Leadtek GeForce 6800, Sound Blaster Audigy, Win98 / DOS
 - **The host** - a modern PC running `fllog.py` at the other end of the cable
@@ -146,8 +142,7 @@ Every switch, explained: the **[wiki](https://github.com/deon81997/framelog/wiki
 
 Any **null-modem** cable (RX/TX crossed), 115200 baud 8N1. Each frame is **9 bytes**, so the line carries up to 1280 fps. The host starts and stops the log by sending one byte back, so there are no hotkeys on the game PC to fight the game for the keyboard.
 
-## Coming Soon!!
-
+## Coming Soon
 <picture><img src="docs/90s/construction.gif" width="200" alt="Under construction"></picture>
 
 - Real hardware results from the D810 and the P5PE-VM
@@ -156,14 +151,12 @@ Any **null-modem** cable (RX/TX crossed), 115200 baud 8N1. Each frame is **9 byt
 - A real VGA capture for the capture analyzer (`flcap.py`: tear lines, runt and dropped frames)
 - Logging to a file on the game PC (no second PC), then over the network
 
-## Built With Claude!!
-
-
-Every line of FRAMELOG, every test rig and every GIF on this page (yes, Vee too!!) was written by **Claude**, an AI by Anthropic. I choose what to build, Claude builds it and tests it in QEMU and 86Box virtual PCs, then I test it on my real machines.
+## Built With Claude
+Every line of FRAMELOG, every test rig and every GIF on this page (yes, Vee too) was written by **Claude**, an AI by Anthropic. I choose what to build, Claude builds it and tests it in QEMU and 86Box virtual PCs, then I test it on my real machines.
 
 ## Download Zone
 
-**[FRAMELOG-0.1-test6.zip](https://github.com/deon81997/framelog/releases/tag/v0.1-test6)** (release page) - DOS TSR, Windows 98 loader + hook DLL + test programs, host tools. A test build: please send me your CSVs!! Older builds: [releases](https://github.com/deon81997/framelog/releases).
+**[FRAMELOG-0.1-test6.zip](https://github.com/deon81997/framelog/releases/tag/v0.1-test6)** (release page) - DOS TSR, Windows 98 loader + hook DLL + test programs, host tools. A test build: please send me your CSVs. Older builds: [releases](https://github.com/deon81997/framelog/releases).
 
 Host tools live in their own repo: **[serial-bench](https://github.com/deon81997/serial-bench)**.
 
@@ -275,7 +268,7 @@ small.
 <picture><img src="docs/90s/btn-800.gif" alt="Best viewed at 800x600"></picture>
 <picture><img src="docs/90s/btn-notepad.gif" alt="Made with Notepad"></picture>
 <picture><img src="docs/90s/btn-gpl.gif" alt="GPL 2.0+"></picture>
-<picture><img src="docs/90s/btn-y2k.gif" alt="Y2K compliant!!"></picture>
+<picture><img src="docs/90s/btn-y2k.gif" alt="Y2K compliant"></picture>
 
 <br><br>
 
