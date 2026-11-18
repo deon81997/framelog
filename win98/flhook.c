@@ -349,6 +349,8 @@ static void glide_meta(int v3)
         if (ver) { memset(b, 0, sizeof b); ver(b); b[79] = 0; meta_add("driver", b); }
         memset(hw, 0, sizeof hw);
         if (qh && qh(hw) && hw[0] >= 1) {
+            diag("%08lX: glide2 hw n %lu type %lu w %lu %lu %lu %lu %lu %lu", g_pid, hw[0], hw[1], hw[2], hw[3], hw[4],
+                 hw[5], hw[6], hw[7]);
             static const char *const ty[] = {"3dfx Voodoo Graphics", "3dfx Voodoo Rush", "Alliance AT3D", "3dfx Voodoo2",
                                              "3dfx Voodoo Banshee/3"};
             meta_add("gpu", hw[1] < 5 ? ty[hw[1]] : "3dfx (Glide2)");
