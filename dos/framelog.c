@@ -443,9 +443,9 @@ int main(int argc, char **argv)
                r.vesa ? "on" : "off (/NOVESA)", (unsigned long)r.vesa_calls, (unsigned long)r.vbepm, (unsigned long)r.vbepm_skip);
         if (r.meta) printf("  metadata on: blocks sent %lu, mode sets seen %lu (INT 10h AH=00h / 4F02h)\n", (unsigned long)r.metas, (unsigned long)r.modesets);
         else puts("  metadata off (/NOMETA)");
-        if (r.glide) printf("  Glide hook on: GLIDE2X.OVL opens %lu, patched loads %lu, grBufferSwap calls %lu, last result %lu%s\n",
+        if (r.glide) printf("  Glide hook on: GLIDE2X.OVL opens %lu, patched loads %lu, grBufferSwap calls %lu, last result %lu%s, DLL start fixes %lu\n",
                             (unsigned long)r.glide_opens, (unsigned long)r.glide_patched, (unsigned long)r.glide_swaps,
-                            (unsigned long)r.glide_err, r.glide_err ? " (not hooked, docs/GLIDE.md)" : "");
+                            (unsigned long)r.glide_err, r.glide_err ? " (not hooked, docs/GLIDE.md)" : "", (unsigned long)r.glide_dllfix);
         else puts("  Glide hook off (/NOGLIDE)");
         return 0;
     }
