@@ -1,5 +1,21 @@
 # HANDOFF — FRAMELOG
 
+## 2026-11-17 Q2 software renderer FIXED (BltFast hook, main 7d006ac); 3DMark99 on 86Box = emulator dead end
+
+Q2 soft (vid_ref soft, sw_mode 3 640x480): ref_soft in a linear mode presents with BltFast(front, 0,0, sysmem
+offscreen) - no Flip, no Blt. FRAMELOG.EXE now patches slot 7 (BltFast) too (3 slots per surface vtable, FL_MAXSLOT
+24, shm/stop names _2); BltFast to the primary = a frame (api ddraw-blt, only if no Flip seen). /LOG detach line
+counts BltFast. DDTEST "fast" = the Q2 pattern (exclusive 640x480x8, BltFast back + front). Results v3 rig (86Box
+PII-450 Voodoo3): DDTEST fast 299/300 at 50.2 fps; Q2 soft 743 presents (632 timedemo + load), Q2 itself 39.9 fps
+without FRAMELOG, 39.9 / 39.8 with it (632-frame window in the CSV = 39.88). ModeX path (Flip) was already covered.
+3DMark99 Max: 640x480 triple (unregistered) = same garbage + 86Box crash ("Bad CMDFIFO0", Qt segfault). Registered as
+Max Pro (free Futuremark key from philscomputerlab.com/futuremark-3dmark.html: Futuremark / 78TR2-8DBDU-BMXXS ->
+frame buffer + test choice unlock), 640x480 DOUBLE, Game 1+2 only: the guest hung before the run (86box.log
+"Illegal instruction 00008B55" at 0147:B9BD, black windows, clock stops). Both = 86Box Voodoo3 emulation, not
+FRAMELOG (fails without it too). Store VM NOT changed (v3 image here got the registration but was hard-killed).
+Next 3: (1) 3DMark99 on real hardware (D810 Radeon X300 / P5PE-VM GeForce 6800, Pro key above, Game 1/2 fps vs
+FRAMELOG); (2) test6 zip with the BltFast hook + D810/P5PE-VM run of Q2 soft + GL; (3) DOS Glide / capture / /RM.
+
 ## 2026-11-17 Win98 real games + D3D8/9 Present hook DONE (test5 zip; Voodoo3 VM = priavte store-w98qi-86box-v3)
 
 D3D8/9 (win98/flhook.c): Direct3DCreate8/9 inline hook -> IDirect3D8/9 vtable CreateDevice slot (15 / 16, private
