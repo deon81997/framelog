@@ -49,7 +49,8 @@ Optional; old hosts skip it (unknown type = junk, the checksum still frames it).
   game's own DirectDraw object; Glide 2 grGlideGetVersion + grSstQueryHardware type; Glide 3 grGetString; OpenGL
   GL_RENDERER / GL_VENDOR + GL_VERSION), `res` + `depth` (DirectDraw: the primary surface at the first present; Glide 2:
   grSstScreenWidth/Height, 16; OpenGL: the window's client size + desktop depth), `api` (ddraw-flip, ddraw-blt, glide2,
-  glide3, opengl), `d3d=1` (a Direct3D DLL is loaded), `gl_dll` (the OpenGL DLL, e.g. 3dfxgl.dll), `pid`, `cpu`
+  glide3, opengl, d3d8, d3d9; D3D8/9: gpu/driver = GetAdapterIdentifier, res/depth = the back buffer, `windowed=1`),
+  `d3d=1` (a Direct3D DLL is loaded; `8` / `9` for D3D8/9), `gl_dll` (the OpenGL DLL, e.g. 3dfxgl.dll), `pid`, `cpu`
   (CPUID brand string, or the family/model name + TSC MHz), `os`, `hook` (FRAMELOG version).
 - Cost: 19 bytes on the wire per chunk, once per start or mode set; nothing per frame.
 

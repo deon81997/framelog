@@ -1,6 +1,7 @@
-/* DDTEST.EXE [blt] [N] [FPS] - DirectDraw: fullscreen 640x480x8 page flips (default) or windowed Blt to the
+/* DDTEST.EXE [blt] [dyn] [N] [FPS] - DirectDraw: fullscreen 640x480x8 page flips (default) or windowed Blt to the
    primary (blt), N frames at FPS. Also does non-primary Blts and (flip mode) a Blt to the primary after the first
-   flip: neither may count. Result line in DDTEST.TXT. */
+   flip: neither may count. dyn = load DDRAW.DLL with LoadLibrary after the window is up (like Quake II's
+   ref_soft); DDDYN.EXE = the same build with no DDRAW import at all. Result line in DDTEST.TXT. */
 #include <ddraw.h>
 #include "tpace.h"
 
@@ -18,7 +19,19 @@ int WINAPI WinMain(HINSTANCE hi, HINSTANCE hp, LPSTR cmd, int show)
     (void)hi; (void)hp; (void)show;
     tp_args(cmd);
     w = tp_window("DDTEST", !blt, blt ? 320 : 640, blt ? 240 : 480);
-    if ((hr = DirectDrawCreate(NULL, &dd, NULL)) != DD_OK) { tp_log("DirectDrawCreate %08lX", hr); return 1; }
+#ifndef DYN
+    if (strstr(cmd, "dyn")) {
+#else
+    {
+#endif
+        HMODULE m = LoadLibraryA("ddraw.dll");
+        HRESULT(WINAPI * ddc)(GUID *, LPDIRECTDRAW *, IUnknown *) = m ? (void *)GetProcAddress(m, "DirectDrawCreate") : NULL;
+        hr = ddc ? ddc(NULL, &dd, NULL) : E_FAIL;
+    }
+#ifndef DYN
+    else hr = DirectDrawCreate(NULL, &dd, NULL);
+#endif
+    if (hr != DD_OK) { tp_log("DirectDrawCreate %08lX", hr); return 1; }
     memset(&sd, 0, sizeof sd);
     sd.dwSize = sizeof sd;
     if (!blt) {

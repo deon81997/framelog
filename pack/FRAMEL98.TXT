@@ -10,10 +10,13 @@ everything is patched in memory and put back when FRAMELOG quits.
 
 What counts as a frame (one per successful call):
   DirectDraw / Direct3D 5-7   IDirectDrawSurface Flip (full screen); Blt to the primary surface (windowed)
+  Direct3D 8 / 9               IDirect3DDevice8/9::Present, IDirect3DSwapChain9::Present
   Glide 2 / Glide 3            grBufferSwap (glide2x.dll / glide3x.dll)
   OpenGL                       wglSwapBuffers in any DLL that has it (OPENGL32.DLL, 3dfx MiniGL such as 3DFXGL.DLL
                                or an OPENGL32.DLL in the game folder) and gdi32 SwapBuffers
-Failed calls (DDERR_WASSTILLDRAWING ...) and presents nested inside another present do not count. A game that both
+Failed calls (DDERR_WASSTILLDRAWING ...) and presents nested inside another present (any API: a D3D8 Present that
+flips through DirectDraw, SwapBuffers -> wglSwapBuffers -> grBufferSwap) do not count; Glide swaps in a process that
+has an OpenGL DLL (3dfx ICD / MiniGL) are left to the OpenGL swap. A game that both
 flips and blits to the primary is counted by its flips only.
 
 INSTALL (GAME PC)
@@ -49,7 +52,12 @@ MHz), os, hook. What you give fllog.py (--gpu ..., suite INI) wins over these.
 
 LIMITS
 
-- Windows 9x only. DirectX 8/9 games (IDirect3DDevice8/9::Present) are not hooked yet.
+- Windows 9x only.
+- Direct3D 8/9: the device must be created after FLHOOK.DLL is in the game (start FRAMELOG first, or "FRAMELOG
+  game.exe"); a game already running with its device made is not caught. Direct3D 9 needs a DirectX 7 class
+  driver (Voodoo3 1.02.18 drivers: D3D9 CreateDevice fails, D3D8 works).
+- Glide 2 on 3dfx drivers: the 3dfx splash animation (3dfxSpl2.dll) is part of the game's frames; SET
+  FX_GLIDE_NO_SPLASH=1 before the game hides it.
 - Without a game on the command line, FLHOOK.DLL loads into programs through window hooks: a program that opens no
   window and reads no messages is only caught when started as "FRAMELOG game.exe".
 - DOS games in a Win98 DOS box: use the DOS FRAMELOG instead (in a DOS-only boot).
@@ -66,6 +74,8 @@ TEST PROGRAMS (TEST folder; N frames at FPS, a result line in <name>.TXT; "spin"
   D3DTEST [hal] [spin] N FPS    Direct3D 6, 640x480x16, RGB software device (hal = the card's HAL)
   GLTEST [wgl] [spin] N FPS     OpenGL window 320x240, gdi32 SwapBuffers (wgl = opengl32 wglSwapBuffers)
   G2TEST [nowin] [spin] N FPS   Glide 2 640x480 with your glide2x.dll (nowin = no window: needs FRAMELOG G2TEST.EXE)
+  D3D8TEST / D3D9TEST [win] [sc] N FPS   Direct3D 8 / 9 HAL, fullscreen 640x480 (win = window; sc = D3D9 swap chain
+                                Present); needs DirectX 8 / 9
 The host should see N-1 frames at 1000/FPS ms each (median), 0 lost.
 
 HARDWARE TEST CHECKLIST (please send the CSVs + FRAMELOG.LOG)

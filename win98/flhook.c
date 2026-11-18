@@ -19,6 +19,8 @@ static HINSTANCE g_inst;
 static DWORD g_pid, g_key;
 static int g_slot = -1;
 static volatile int g_flipseen;
+static int g_flipdiag;
+static volatile DWORD g_nflip, g_nblt, g_nnest; /* /LOG: wrapper calls in this process (detach line) */             /* /LOG: first Flip result per process (once) */
 static volatile DWORD g_claimed;   /* this process owns the log */
 static DWORD g_lastscan, g_lastfull;
 static volatile LONG g_scanning;
@@ -201,10 +203,12 @@ static void dd_frame(void *s, unsigned __int64 t, DWORD api)
         unsigned __int64 t = fl_rdtsc();                                                                              \
         DWORD me = GetCurrentThreadId(), outer = g_ptid != me;                                                       \
         HRESULT hr;                                                                                                   \
+        g_nflip++; if (!outer) g_nnest++;                                                                             \
         if (outer) g_ptid = me;                                                                                      \
         hr = ((FlipFn)shm->orig[k])(s, tg, f);                                                                        \
         if (outer) {                                                                                                  \
             g_ptid = 0;                                                                                              \
+            if (!g_flipdiag) { g_flipdiag = 1; diag("%08lX: first Flip hr %08lX", g_pid, hr); }                    \
             if (hr == DD_OK) { g_flipseen = 1; dd_frame(s, t, FL_API_DDFLIP); }                                       \
         }                                                                                                             \
         return hr;                                                                                                    \
@@ -215,6 +219,7 @@ static void dd_frame(void *s, unsigned __int64 t, DWORD api)
         DWORD me = GetCurrentThreadId(), outer = g_ptid != me;                                                       \
         HRESULT hr;                                                                                                   \
         if (outer) g_ptid = me;                                                                                      \
+        g_nblt++;                                                                                                     \
         hr = ((BltFn)shm->orig[k])(s, r, src, sr, f, fx);                                                             \
         if (outer) {                                                                                                  \
             g_ptid = 0;                                                                                              \
@@ -307,7 +312,10 @@ static void ihook_restore_all(void)
     nih = 0;
 }
 
-/* Glide */
+/* Glide. In a process with an OpenGL DLL hooked (3dfx ICD / MiniGL on top of Glide) Glide swaps are not frames:
+   the GL swap counts, and the ICD's own swaps at context setup (seen: 2 in Quake II) are not game frames. */
+#define MAXGL 3
+static HMODULE glmod[MAXGL];
 typedef void(WINAPI *SwapFn)(DWORD);
 static SwapFn g2swap, g3swap;
 static HMODULE g2mod, g3mod;
@@ -358,7 +366,7 @@ static void WINAPI g2wrap(DWORD n)
     g2swap(n);
     if (outer) {
         g_ptid = 0;
-        if (fl_event(t, FL_API_GLIDE2, &claim) && claim) glide_meta(0);
+        if (!glmod[0] && fl_event(t, FL_API_GLIDE2, &claim) && claim) glide_meta(0);
     }
 }
 
@@ -371,15 +379,13 @@ static void WINAPI g3wrap(DWORD n)
     g3swap(n);
     if (outer) {
         g_ptid = 0;
-        if (fl_event(t, FL_API_GLIDE3, &claim) && claim) glide_meta(1);
+        if (!glmod[0] && fl_event(t, FL_API_GLIDE3, &claim) && claim) glide_meta(1);
     }
 }
 
 /* OpenGL */
-#define MAXGL 3
 typedef BOOL(WINAPI *WglSwapFn)(HDC);
 static WglSwapFn glswap[MAXGL];
-static HMODULE glmod[MAXGL];
 static BOOL(WINAPI *gdiswap)(HDC);
 
 static void gl_meta(HMODULE m, HDC dc)
@@ -791,6 +797,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD why, LPVOID res)
         iat_patch(GetModuleHandleA(NULL));
         scan(0); /* names only: no Toolhelp inside DllMain */
     } else if (why == DLL_PROCESS_DETACH && shm) {
+        if (g_nflip || g_nblt) diag("%08lX: detach, Flip %lu Blt %lu nested %lu ptid %lu", g_pid, g_nflip, g_nblt, g_nnest, g_ptid);
         if (g_slot >= 0) shm->procs[g_slot].key = 0;
         if (g_claimed && shm->owner_pid == g_pid) shm->owner_gone = 1;
         d3d_restore();
