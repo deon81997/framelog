@@ -1,0 +1,27 @@
+# Publishes release/FRAMELOG-<ver>.zip as GitHub release v<ver> (tag on this commit) when it is not out yet.
+# Runs when a release zip or this file changes on main, or by hand (Actions > release > Run workflow).
+name: release
+on:
+  push:
+    branches: [main]
+    paths: ['release/*.zip', '.github/workflows/release.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Publish the release zip
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          for f in release/FRAMELOG-*.zip; do
+            v=${f#release/FRAMELOG-}; v=${v%.zip}; tag=v$v; t=${v#*-}
+            if gh release view "$tag" >/dev/null 2>&1; then echo "$tag is out already"; continue; fi
+            notes=$(grep -m1 -F ": $t.**" README.md | sed -e 's/<[^>]*>//g' -e 's/^ *//' || true)
+            [ -n "$notes" ] || notes="FRAMELOG $v"
+            gh release create "$tag" "$f" --target "$GITHUB_SHA" --title "FRAMELOG $v" --notes "$notes"
+          done
