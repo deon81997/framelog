@@ -15,7 +15,7 @@ int WINAPI WinMain(HINSTANCE hi, HINSTANCE hp, LPSTR cmd, int show)
     DDBLTFX fx;
     HRESULT hr;
     HWND w;
-    int blt = strstr(cmd, "blt") != NULL, i, ok = 0;
+    int blt = strstr(cmd, "blt") != NULL, fast = strstr(cmd, "fast") != NULL, i, ok = 0; /* fast = Quake II soft: BltFast to the front buffer */
     (void)hi; (void)hp; (void)show;
     tp_args(cmd);
     w = tp_window("DDTEST", !blt, blt ? 320 : 640, blt ? 240 : 480);
@@ -56,7 +56,7 @@ int WINAPI WinMain(HINSTANCE hi, HINSTANCE hp, LPSTR cmd, int show)
     memset(&sd, 0, sizeof sd);
     sd.dwSize = sizeof sd;
     sd.dwFlags = DDSD_CAPS | DDSD_WIDTH | DDSD_HEIGHT;
-    sd.ddsCaps.dwCaps = DDSCAPS_OFFSCREENPLAIN;
+    sd.ddsCaps.dwCaps = DDSCAPS_OFFSCREENPLAIN | (fast ? DDSCAPS_SYSTEMMEMORY : 0);
     sd.dwWidth = 320;
     sd.dwHeight = 240;
     IDirectDraw_CreateSurface(dd, &sd, &off, NULL);
@@ -67,7 +67,12 @@ int WINAPI WinMain(HINSTANCE hi, HINSTANCE hp, LPSTR cmd, int show)
         tp_pump();
         fx.dwFillColor = i & 255;
         if (off) IDirectDrawSurface_Blt(off, NULL, NULL, NULL, DDBLT_COLORFILL | DDBLT_WAIT, &fx); /* not counted */
-        if (!blt) {
+        if (fast) {
+            RECT q = {0, 0, 320, 240};
+            if (back) IDirectDrawSurface_BltFast(back, 0, 0, off, &q, DDBLTFAST_WAIT); /* not counted (not primary) */
+            hr = IDirectDrawSurface_BltFast(pri, 0, 0, off, &q, DDBLTFAST_WAIT);
+            if (hr == DDERR_SURFACELOST) { IDirectDrawSurface_Restore(pri); continue; }
+        } else if (!blt) {
             RECT q = {0, 0, 320, 240};
             if (back) IDirectDrawSurface_Blt(back, &q, off, NULL, DDBLT_WAIT, NULL);  /* not counted */
             do hr = IDirectDrawSurface_Flip(pri, NULL, 0); while (hr == DDERR_WASSTILLDRAWING); /* busy flips count once */
@@ -84,7 +89,7 @@ int WINAPI WinMain(HINSTANCE hi, HINSTANCE hp, LPSTR cmd, int show)
         if (hr == DD_OK) ok++;
         tp_wait();
     }
-    tp_log("ddtest %s%s frames %d ok %d fps %d spare %lu vt %p flip %p", blt ? "blt" : "flip", strstr(cmd, "modex") ? " modex" : "",
+    tp_log("ddtest %s%s%s frames %d ok %d fps %d spare %lu vt %p flip %p", blt ? "blt" : "flip", fast ? " fast" : "", strstr(cmd, "modex") ? " modex" : "",
            tp_n, ok, tp_fps, tp_spare, *(void **)pri, (*(void ***)pri)[11]);
     if (off) IDirectDrawSurface_Release(off);
     IDirectDrawSurface_Release(pri);

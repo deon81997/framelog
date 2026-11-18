@@ -20,7 +20,7 @@ static DWORD g_pid, g_key;
 static int g_slot = -1;
 static volatile int g_flipseen;
 static int g_flipdiag;
-static volatile DWORD g_nflip, g_nblt, g_nnest; /* /LOG: wrapper calls in this process (detach line) */             /* /LOG: first Flip result per process (once) */
+static volatile DWORD g_nflip, g_nblt, g_nbltf, g_nnest; /* /LOG: wrapper calls in this process (detach line) */             /* /LOG: first Flip result per process (once) */
 static volatile DWORD g_claimed;   /* this process owns the log */
 static DWORD g_lastscan, g_lastfull;
 static volatile LONG g_scanning;
@@ -121,6 +121,7 @@ static void meta_done(void)
 
 typedef HRESULT(WINAPI *FlipFn)(void *, void *, DWORD);
 typedef HRESULT(WINAPI *BltFn)(void *, void *, void *, void *, DWORD, void *);
+typedef HRESULT(WINAPI *BltFastFn)(void *, DWORD, DWORD, void *, void *, DWORD);
 typedef HRESULT(WINAPI *CapsFn)(void *, void *);
 typedef HRESULT(WINAPI *QIFn)(void *, const GUID *, void **);
 typedef ULONG(WINAPI *RelFn)(void *);
@@ -226,10 +227,26 @@ static void dd_frame(void *s, unsigned __int64 t, DWORD api)
             if (hr == DD_OK && !g_flipseen && src && is_primary(s)) dd_frame(s, t, FL_API_DDBLT);                     \
         }                                                                                                             \
         return hr;                                                                                                    \
+    }                                                                                                                 \
+    static HRESULT WINAPI fw##k##f(void *s, DWORD x, DWORD y, void *src, void *sr, DWORD f)                         \
+    {                                                                                                                 \
+        unsigned __int64 t = fl_rdtsc();                                                                              \
+        DWORD me = GetCurrentThreadId(), outer = g_ptid != me;                                                       \
+        HRESULT hr;                                                                                                   \
+        if (outer) g_ptid = me;                                                                                      \
+        g_nbltf++;                                                                                                    \
+        hr = ((BltFastFn)shm->orig[k])(s, x, y, src, sr, f);                                                          \
+        if (outer) {                                                                                                  \
+            g_ptid = 0;                                                                                              \
+            if (hr == DD_OK && !g_flipseen && src && is_primary(s)) dd_frame(s, t, FL_API_DDBLT);                     \
+        }                                                                                                             \
+        return hr;                                                                                                    \
     }
 FW(0) FW(1) FW(2) FW(3) FW(4) FW(5) FW(6) FW(7) FW(8) FW(9) FW(10) FW(11) FW(12) FW(13) FW(14) FW(15)
-static void *const fwt[FL_MAXSLOT] = {fw0, fw1, fw2, fw3, fw4, fw5, fw6, fw7, fw8, fw9, fw10, fw11, fw12, fw13, fw14, fw15};
-static void *const bwt[FL_MAXSLOT] = {bw0, bw1, bw2, bw3, bw4, bw5, bw6, bw7, bw8, bw9, bw10, bw11, bw12, bw13, bw14, bw15};
+FW(16) FW(17) FW(18) FW(19) FW(20) FW(21) FW(22) FW(23)
+static void *const fwt[FL_MAXSLOT] = {fw0, fw1, fw2, fw3, fw4, fw5, fw6, fw7, fw8, fw9, fw10, fw11, fw12, fw13, fw14, fw15, fw16, fw17, fw18, fw19, fw20, fw21, fw22, fw23};
+static void *const bwt[FL_MAXSLOT] = {bw0, bw1, bw2, bw3, bw4, bw5, bw6, bw7, bw8, bw9, bw10, bw11, bw12, bw13, bw14, bw15, bw16, bw17, bw18, bw19, bw20, bw21, bw22, bw23};
+static void *const bft[FL_MAXSLOT] = {fw0f, fw1f, fw2f, fw3f, fw4f, fw5f, fw6f, fw7f, fw8f, fw9f, fw10f, fw11f, fw12f, fw13f, fw14f, fw15f, fw16f, fw17f, fw18f, fw19f, fw20f, fw21f, fw22f, fw23f};
 static void *g_jt[FL_MAXSLOT];
 
 /* ---------- inline hooks (Glide, OpenGL) ---------- */
@@ -777,7 +794,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD why, LPVOID res)
         gdiswap = (BOOL(WINAPI *)(HDC))GetProcAddress(GetModuleHandleA("gdi32.dll"), "SwapBuffers");
         k32_lla = (void *)GetProcAddress(GetModuleHandleA("kernel32.dll"), "LoadLibraryA");
         k32_llxa = (void *)GetProcAddress(GetModuleHandleA("kernel32.dll"), "LoadLibraryExA");
-        for (i = 0; i < FL_MAXSLOT; i++) g_jt[i] = (i < (int)shm->nslots && shm->kind[i] == FL_KIND_BLT) ? bwt[i] : fwt[i];
+        for (i = 0; i < FL_MAXSLOT; i++) g_jt[i] = i >= (int)shm->nslots ? fwt[i] : shm->kind[i] == FL_KIND_BLT ? bwt[i] : shm->kind[i] == FL_KIND_BLTFAST ? bft[i] : fwt[i];
         InterlockedIncrement((LONG *)&shm->dllcount);
         if (g_pid != shm->loader_pid)
             for (i = 0; i < FL_MAXPROC; i++) {
@@ -797,7 +814,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD why, LPVOID res)
         iat_patch(GetModuleHandleA(NULL));
         scan(0); /* names only: no Toolhelp inside DllMain */
     } else if (why == DLL_PROCESS_DETACH && shm) {
-        if (g_nflip || g_nblt) diag("%08lX: detach, Flip %lu Blt %lu nested %lu ptid %lu", g_pid, g_nflip, g_nblt, g_nnest, g_ptid);
+        if (g_nflip || g_nblt || g_nbltf) diag("%08lX: detach, Flip %lu Blt %lu BltFast %lu nested %lu ptid %lu", g_pid, g_nflip, g_nblt, g_nbltf, g_nnest, g_ptid);
         if (g_slot >= 0) shm->procs[g_slot].key = 0;
         if (g_claimed && shm->owner_pid == g_pid) shm->owner_gone = 1;
         d3d_restore();

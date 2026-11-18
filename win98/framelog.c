@@ -173,15 +173,15 @@ static void make_stub(int k)
 
 static int add_vtable(void **vt)
 {
-    static const int slot[2] = {11, 5}; /* Flip, Blt */
+    static const int slot[3] = {11, 5, 7}; /* Flip, Blt, BltFast */
     DWORD i;
     int j;
     for (i = 0; i < shm->nslots; i++)
         if (shm->vtslot[i] == &vt[11] || shm->vtslot[i] == &vt[5]) return 0; /* seen */
-    for (j = 0; j < 2; j++) {
+    for (j = 0; j < 3; j++) {
         DWORD k = shm->nslots;
         if (k >= FL_MAXSLOT) return 0;
-        shm->kind[k] = j ? FL_KIND_BLT : FL_KIND_FLIP;
+        shm->kind[k] = j == 2 ? FL_KIND_BLTFAST : j ? FL_KIND_BLT : FL_KIND_FLIP;
         shm->vtslot[k] = &vt[slot[j]];
         shm->orig[k] = vt[slot[j]];
         make_stub(k);
@@ -220,7 +220,7 @@ static void dd_setup(void)
             VirtualProtect(shm->vtslot[i], 4, PAGE_READWRITE, &old);
         InterlockedExchange((LONG *)shm->vtslot[i], (LONG)shm->stub[i]);
     }
-    say("DirectDraw: %lu vtable slots hooked (Flip, Blt to primary)", shm->nslots);
+    say("DirectDraw: %lu vtable slots hooked (Flip, Blt/BltFast to primary)", shm->nslots);
 }
 
 /* DDRAW.DLL may rewrite its vtables (seen on Win98 after a process exits): put the stubs back */

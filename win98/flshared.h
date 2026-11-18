@@ -5,12 +5,12 @@
 #define FLSHARED_H
 #include <windows.h>
 
-#define FL_SHM_NAME "FRAMELOG_SHM_1"
-#define FL_STOP_EVENT "FRAMELOG_STOP_1"
+#define FL_SHM_NAME "FRAMELOG_SHM_2"
+#define FL_STOP_EVENT "FRAMELOG_STOP_2"
 #define FL_MAGIC 0x31474C46u /* 'FLG1' */
 #define FL_RING 4096         /* power of two */
 #define FL_MAXPROC 64
-#define FL_MAXSLOT 16        /* DirectDraw vtable slots patched (Flip/Blt x Surface1..7) */
+#define FL_MAXSLOT 24        /* DirectDraw vtable slots patched (Flip/Blt/BltFast x Surface1..7) */
 #define FL_STUB 48
 #define FL_DIAG 32           /* diag lines from DLL instances */
 
@@ -26,6 +26,7 @@
 
 #define FL_KIND_FLIP 0
 #define FL_KIND_BLT 1
+#define FL_KIND_BLTFAST 2    /* BltFast to the primary (Quake II software renderer, linear modes) */
 
 typedef struct {
     volatile DWORD seq;          /* index + 1 when tsc is valid */
