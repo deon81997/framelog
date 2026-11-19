@@ -108,21 +108,34 @@ works unchanged: patch the bytes in the read buffer before the loader copies the
   host-CS check, so COPY/real-mode tools never see patched bytes). glstatic.c gs_parse scans the file with our own
   handle at open time (4 KB reads, load time only; MZ files without an LE/PE header are skipped after one read).
   GLIDE2X.OVL keeps its own export-based path, so a game with an OVL is never counted twice (its EXE is scanned, no hit).
-- **Signature** (Glide 2.x SST-1 grBufferSwap; the same function in OVL 2.31, OVL 2.42 and BDD 2.11):
-  - fence: `87 05 xx xx xx xx  89 /r 28 01 00 00  87 05` = the write of swapbufferCMD (SST-1 register 128h) between
-    two `xchg [p6fence],eax` (Glide's P6 write fence) - exactly once per Glide, never in game code;
-  - start: the nearest `53 56 57 55 8B 5C 24 14` (push ebx/esi/edi/ebp; mov ebx,[esp+14h] = swapInterval) at most
-    180h bytes before it; end: `5D 5F 5E 5B C2 04 00` (pop x4, ret 4) at most 40h bytes after it.
-  - Exactly one hit per file, else nothing is patched (/STATUS "last error": 20 none, 21 several, 22 format, 23
-    relocation/fixup in the 8 prologue bytes, 24 read error).
-- **Checks:** PE: no base relocation in the 8 replaced bytes (the BDD's nearest is 2 bytes after them); LE: pages in
-  order, no fixup in [start-6, start+8). Then the OVL thunk: `FF 15 ptr` + 2 NOPs over the prologue, thunk (own
-  64-byte DOS block) = IN 3D4h with 'GL' -> gl_flip, the 8 original bytes, jmp back.
+- **Signature** (Glide 2.x SST-1 grBufferSwap; 2.03h2 to 2.42 seen), anchored on the write of swapbufferCMD
+  (SST-1 register 128h): `89 /r 28 01 00 00` (mov [hw+128h],reg), accepted when
+  - fenced: `87 05 A` right after it and `87 05 A` (same address A) at most 16 bytes before it = Glide's P6 write
+    fence `xchg [p6fence],eax` (OVL 2.31/2.42, BDD 2.11: no gap; Tomb Raider demo 2.03h3: 9 bytes between, and the
+    fence only runs on a P6), or
+  - not fenced (2.03h2, Toshinden): `25 00 00 00 70 C1 E8 1C` (and eax,70000000h; shr eax,1Ch = the wait until
+    fewer than 7 swaps are pending) at most 180h bytes before it;
+  - end: `5F 5E 5B C2 04 00` (pop edi/esi/ebx; ret 4) at most 50h bytes after it (`5D` before it = ebp was pushed);
+  - start: the nearest `53 56 57 55 8B 5C 24 14` (with ebp; 2.11-2.42, 8 bytes) or `53 56 57 8B 7C 24 10`
+    (2.03h3, 7 bytes) at most 180h bytes before it, and it must agree with the end (ebp pushed = popped).
+  - Exactly one function per file (all its stores give the same place), else nothing is patched (/STATUS "last
+    error": 20 none, 21 several, 22 format, 23 relocation/fixup in the patched bytes, 24 read error).
+- **Where to patch:** the start when one of the two starts is found: `FF 15 ptr` + NOPs over its 7/8 bytes, thunk
+  (own 64-byte DOS block) = IN 3D4h with 'GL' -> gl_flip, the moved bytes, jmp back (the OVL thunk). No known start
+  (2.03h2 begins with `mov ebx,[global]` = an LE fixup in the first 9 bytes): the end, `FF 25 ptr` (jmp) over
+  `5F 5E 5B C2 04 00`; that thunk = the IN 3D4h, then pop edi/esi/ebx; ret 4 itself. The frame is then stamped as the
+  swap returns instead of as it starts: same interval per frame. No jump in TSD's function lands inside those 6 bytes.
+- **Checks:** PE: no base relocation in the patched bytes (the BDD's nearest is 2 bytes after them); LE: pages in
+  order, no fixup reaching into them (by the fixup's source size: offset32 = 4, 16:32 = 6, ...; TSD's
+  `mov [global],ebx` fixup ends right at its end bytes).
 - **One call = one frame:** gl_flip no longer merges calls < 0.5 ms apart (the merge is for 2-byte CRTC writes).
   Carmageddon swaps twice back to back at screen changes; merged, /STATUS showed 5790 swaps vs 5782 frames.
-- **Host test:** `sh dos/glide/test/gstest.sh /tmp/dl` (synthetic PE: relocs in/near the prologue, two hits, window
-  edges, broken epilogue; all 35 EXE/BDD/OVL files of the 4 demos: hit only in 3DFX_DOS.BDD 0x53BC and the two SST-1
-  OVLs at their export, none in VRUSH's Rush OVL or any EXE).
+- **Host test:** `sh dos/glide/test/gstest.sh /tmp/dl` (synthetic PE: relocs in/near the prologue or the end, two
+  hits, window edges, broken epilogue, 2.03h3 / 2.03h2 layouts, unfenced store without the wait = none; 47 EXE/BDD/OVL
+  files of 7 demos: hits only in 3DFX_DOS.BDD 0x53BC, the two SST-1 OVLs at their export, TOMB.EXE 0x5F874 (start) and
+  TSD.EXE 0x856ED (end); none in VRUSH's Rush OVL, Screamer 2 or any other EXE. Plus, when extracted, 3 patches
+  without free game data (host scan only): Tomb Raider 3dfx patch tomb3dfx.exe 2.1.1 0x7B2FC, Descent II
+  d2voodoo.exe 2.2 0x139B64, Toshinden retail upgrade TSD.EXE 2.03h2 end:0x861BD; 52 files, no false hit).
 
 Results (86Box PII-450, Voodoo Graphics 4 MB, HDPMI32i; keys: priavte testrig/framelog/carmkeys.py, a screen-state
 driver: Return until the race, wait for the demo timer, Return on the ad, Esc in the race menu, Down/Up until the red
@@ -133,6 +146,12 @@ lamp is on QUIT CARMAGEDDON, Return x2):
 | Carmageddon Splat Pack demo | patched in 1 (3 files scanned), grBufferSwap 6887 = frames 6887, 0 lost | race 41-52 fps (17 ms), menus 29.5 fps; fixture serial-bench 86box-v1-dosglide/carmageddon-demo.csv |
 | Extreme Assault 1.1.1 demo | OVL 1, static scanned 1, patched 0; 4149 = 4149, 0 lost | exact |
 | Archimedean Dynasty demo | OVL 1, static scanned 1, patched 0; 14307 = 14307, 0 lost | exact |
+| Tomb Raider demo, 3Dfx version (`TOMB`; 2.03h3 in the LE EXE, start patch) | static scanned 1, patched 1; 2156 = frames 2156, 0 lost | demo-mode levels ~30 fps (33 ms, the game's cap); the demo quits by itself (no level3a.phd) |
+| Battle Arena Toshinden 2 3Dfx demo v2.5 (`TSD -fx`; 2.03h2, no fence, end patch) | static scanned 1, patched 1; 1761 swaps, 1761 logged, 0 lost, 1760 in the CSV | fight ~50.8 fps (19.7 ms); menus draw without swaps; keys priavte testrig/framelog/tsdkeys.py; the last record stayed in the ring (no swap after the fight; see Open) |
+
+Glide 2.03 rerun with the new signature (same day): Carmageddon 7659 = 7659, Extreme Assault (title only) 329 = 329,
+Archimedean Dynasty (`DOS4GW FIGHT3 solo`, quit Esc, 1, 1) 2908 = 2908, all 0 lost. Scan time 137 ms TOMB.EXE
+(1.4 MB), 199 ms TSD.EXE. Runtime: the start thunk is the same code; the end thunk runs the same 9 instructions.
 
 Cost (86Box PII-450, Archimedean Dynasty mission, fps 5-55 s after the mission starts, old = DOS Glide build without
 static, alternating old/new x3): old 151.0 / 157.8 / 148.8, new 155.4 / 153.4 / 147.4 -> mean 152.5 vs 152.1 (-0.3 %,
@@ -144,6 +163,7 @@ after a successful open. Load time: the scan, once per EXE/BDD opened by the gam
 
 - A real DOS Glide game with Tenberry's loader (does its DLL init run under HDPMI32i? does it read the OVL page by
   page or in big blocks - the hook copes with either, a read only has to cover the bytes).
-- Static Glide in an LE EXE (the code path exists and is host-tested, no real game found yet: Carmageddon keeps its
-  Glide in a PE driver); static Glide 2.1x builds without the P6 fence (signature = fence + 128h, see below).
+- Static Glide: no 2.1x build without the P6 fence found yet (2.03h2 without it works); the end patch assumes no
+  jump into the last 6 bytes (true in TSD; check a new game's function with objdump). Last frame record after the
+  final swap waits in the ring until the next trap (TSD: 1761 logged, 1760 in the CSV).
 - glide3x (DOS Glide 3 is rare) and Voodoo2/Banshee OVLs: run leinfo.py on them.
