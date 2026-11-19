@@ -37,7 +37,7 @@
 
 <br><br>
 
-<a href="https://github.com/deon81997/framelog/releases/tag/v0.1-test9"><img src="docs/90s/btn-download.gif" alt="Download"></a>
+<a href="https://github.com/deon81997/framelog/releases/tag/v0.1-test10"><img src="docs/90s/btn-download.gif" alt="Download"></a>
 <picture><img src="docs/90s/btn-dos.gif" alt="Powered by DOS 7.1"></picture>
 <picture><img src="docs/90s/btn-win98.gif" alt="Runs on Windows 98 SE"></picture>
 <picture><img src="docs/90s/btn-serial.gif" alt="115200 baud"></picture>
@@ -80,6 +80,8 @@
 </div>
 
 ## <picture><img src="docs/90s/star.gif" width="28" alt="*"></picture> What's New <picture><img src="docs/90s/star.gif" width="28" alt="*"></picture>
+<picture><img src="docs/90s/new.gif" alt="NEW!"></picture> **11/18/2026: test10.** **Carmageddon and other games with Glide built in.** Some DOS Glide games have no GLIDE2X.OVL: Glide is inside the game's own files (Carmageddon: CARM3DFX.EXE + 3DFX_DOS.BDD). FRAMELOG now scans .EXE and .BDD files once while the game loads, finds grBufferSwap and times every swap there too. Tested on a Voodoo Graphics in 86Box: Carmageddon 6887 swaps = 6887 frames, 0 lost; Extreme Assault and Archimedean Dynasty still exact. Cost: within noise while playing, 0.2-0.3 s once at load. `FRAMELOG /STATUS` has a new "Static Glide" line (error codes 20-24 in FRAMELOG.TXT). Windows 98 and host files are test9's, unchanged.
+
 <picture><img src="docs/90s/new.gif" alt="NEW!"></picture> **11/18/2026: test9.** **Live stats while you log!!** The host logger (`LOG COM3 run.csv NAME` or `fllog.py`) now redraws one status line every second: frames so far, fps over the last second and since the start, the last and the slowest frame time, and lost frames - so you can see it working before you press Ctrl+C. The numbers are the game PC's own timing, the same as in the CSV. `--no-live` turns it off; test rigs that pipe the output get no status line. Game PC files are test8's, unchanged. Tested against a fake game PC on a socket (single run and suite: 60 fps, a loading pause, a dropped-frames record).
 
 <picture><img src="docs/90s/new.gif" alt="NEW!"></picture> **11/18/2026: test8.** **DOS Glide games on a 3dfx Voodoo.** FRAMELOG now times DOS games that use 3dfx's GLIDE2X.OVL: every buffer swap is a frame. It also fixes the OVL's start code, which stops with "DLL load aborted" under HDPMI32i even without FRAMELOG. Tested on a Voodoo Graphics in 86Box: Extreme Assault and Archimedean Dynasty log every frame with 0 lost, Redguard logs; games with Glide built into the EXE (Carmageddon) are not covered yet. Cost: under 0.1%. Start order and a Voodoo PC checklist are in FRAMELOG.TXT.
@@ -87,8 +89,6 @@
 <picture><img src="docs/90s/new.gif" alt="NEW!"></picture> **11/18/2026: test7.** **Tested on three 3dfx cards.** Quake II (3dfx MiniGL, OpenGL ICD, software), Unreal Tournament (Glide), Expendable, Incoming and 3DMark99 on a Voodoo Graphics, a Voodoo2 and a Voodoo3: FRAMELOG matches the games' own numbers to within 0.1% (about 1% for Expendable, which times in whole seconds). Fixes: Voodoo2 and Voodoo3 get their real names in Glide games, the first DirectDraw game no longer loses its card name, and 3DMark99 on a Voodoo2 add-on card is logged as the Voodoo2. Details on the [Game Coverage](https://github.com/deon81997/framelog/wiki/Game-Coverage) page.
 
 <picture><img src="docs/90s/new.gif" alt="NEW!"></picture> **11/17/2026: test6.** **Quake II's software renderer is timed too.** It never flips: it copies each frame to the screen with DirectDraw's BltFast, and FRAMELOG now catches that. Quake II scores the same 39.9 fps with and without FRAMELOG. Plus a brand-new **[wiki](https://github.com/deon81997/framelog/wiki)** that explains every switch.
-
-<picture><img src="docs/90s/new.gif" alt="NEW!"></picture> **11/17/2026: test5.** **Direct3D 8 and 9 games are timed too.** FRAMELOG now catches `Present` in DirectX 8 and 9 (device and swap chain), with the card name, driver and resolution in the run info. And it met its first real games on a (emulated) Voodoo3 3000: **Quake II** timedemo in OpenGL lands within **1%** of the game's own fps, the **Forsaken** demo within **0.5%**. Cost: under 0.5% CPU, the same as run-to-run noise.
 
 ## <picture><img src="docs/90s/star.gif" width="28" alt="*"></picture> What is this? <picture><img src="docs/90s/star.gif" width="28" alt="*"></picture>
 
@@ -163,7 +163,7 @@ Every line of FRAMELOG, every test rig and every GIF on this page (yes, Vee too)
 
 ## <picture><img src="docs/90s/star.gif" width="28" alt="*"></picture> Download Zone <picture><img src="docs/90s/star.gif" width="28" alt="*"></picture>
 
-<a href="https://github.com/deon81997/framelog/releases/tag/v0.1-test9"><img src="docs/90s/btn-download.gif" alt="Download"></a> **[FRAMELOG-0.1-test9.zip](https://github.com/deon81997/framelog/releases/tag/v0.1-test9)** (release page) - DOS TSR, Windows 98 loader + hook DLL + test programs, host tools. A test build: please send me your CSVs. Older builds: [releases](https://github.com/deon81997/framelog/releases).
+<a href="https://github.com/deon81997/framelog/releases/tag/v0.1-test10"><img src="docs/90s/btn-download.gif" alt="Download"></a> **[FRAMELOG-0.1-test10.zip](https://github.com/deon81997/framelog/releases/tag/v0.1-test10)** (release page) - DOS TSR, Windows 98 loader + hook DLL + test programs, host tools. A test build: please send me your CSVs. Older builds: [releases](https://github.com/deon81997/framelog/releases).
 
 Host tools live in their own repo: **[serial-bench](https://github.com/deon81997/serial-bench)**.
 

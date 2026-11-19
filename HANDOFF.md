@@ -1,5 +1,17 @@
 # HANDOFF — FRAMELOG
 
+## 2026-11-18 test10: static Glide zip (Carmageddon)
+
+Done: release/FRAMELOG-0.1-test10.zip = test9 zip with FRAMELOG/FRAMELOG.EXE (DJGPP v3.4 build of main d862df7, dos/
+unchanged since; md5 b3dad09b, test9 had 03b84a18 = no static Glide) + FRAMELOG.TXT swapped; FLIP.EXE, WIN98/ and HOST/
+byte-identical to test9. FRAMELOG.TXT DOS GLIDE: "Static Glide (test10)" paragraph (EXE/BDD scanned once at load, /STATUS
+"Static Glide" line, last error 20 none / 21 several / 22 format / 23 relocation / 24 read), Carmageddon tested line,
+cost line, Voodoo checklist item. README: test10 news line (test5 line dropped, 5 shown), download links -> v0.1-test10.
+Release: the release workflow makes tag v0.1-test10 + GitHub release from the pushed zip (check ls-remote / Actions).
+Not done: docs/90s/counter.gif still shows 9 (not this task's file: make90s.py counter(n=10) + README alt "000010");
+leftover branch wip/glstatic-2026-11-18 (delete in the browser). No new runtime test: same source as the 86Box runs below.
+Next 3: real Voodoo 1/2 run of the test10 checklist; Redguard quit; LE-EXE static Glide with a real game.
+
 ## 2026-11-18 Static Glide (Carmageddon): grBufferSwap by signature in the EXE/BDD reads - works on 86Box Voodoo Graphics
 
 Done: glide/glstatic.c (+ .h; #included by glhook.c): the stub also reports opens of *.EXE / *.BDD by a PM program;

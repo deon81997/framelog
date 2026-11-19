@@ -77,12 +77,24 @@ DOS GLIDE (3DFX) GAMES
   that start code too, at load time only (/STATUS: "DLL start fixes").
   So with /NOGLIDE, or without FRAMELOG, such a game still aborts under
   HDPMI32i - run it without HDPMI32i (its own DOS4GW) then.
-  Not covered yet: games with Glide built into the EXE (no GLIDE2X.OVL,
-  e.g. Carmageddon's CARM3DFX): they run normally but log no frames.
+  Static Glide (test10): games with Glide built in (no GLIDE2X.OVL,
+  e.g. Carmageddon: CARM3DFX.EXE + 3DFX_DOS.BDD) are covered too. When
+  a game opens an .EXE or .BDD file, FRAMELOG scans it once, at load
+  time, for Glide 2.x's grBufferSwap and patches it in memory only if
+  exactly one is found (the file on disk is not changed). /STATUS line
+  "Static Glide: EXE/BDD files scanned, grBufferSwap patched in, last
+  error, scan time". Last error: 0 = none, 20 = no grBufferSwap in
+  that file (normal for EXEs without Glide), 21 = more than one found,
+  22 = file format not known, 23 = relocation in the patched bytes,
+  24 = read error; 21-24 = not patched, please report the game.
+  The scan takes 0.2-0.3 s once while the game loads (Carmageddon 3
+  files 322 ms), nothing while it runs. Not covered: Glide 2.1x builds
+  without the Pentium Pro write fence.
   Tested only with Voodoo Graphics (Voodoo 1) OVLs 2.31 and 2.42 in
   86Box; a Voodoo2 OVL is untested.
   FRAMELOG /STATUS shows "Glide hook on: GLIDE2X.OVL opens, patched
-  loads, grBufferSwap calls ..." - swaps should equal frames logged.
+  loads, grBufferSwap calls ..." - swaps should equal frames logged
+  (OVL and static Glide alike).
 
 RUN INFO (METADATA)
   On by default. When logging starts, FRAMELOG sends the host a short
@@ -127,7 +139,8 @@ WHICH GAMES LOG (tested in 86Box, Pentium II 450)
   - DOS Glide (Voodoo Graphics, HDPMI32i): Extreme Assault 1.1.1 demo
     and Archimedean Dynasty demo (DOS4GW FIGHT3 solo): every swap
     logged, 0 lost; Redguard demo (RGFX.EXE): logs (18 fps cap);
-    Carmageddon Splat Pack (static Glide): no frames, no crash.
+    Carmageddon Splat Pack (static Glide, test10): 6887 swaps = 6887
+    frames, 0 lost, race 41-52 fps.
   If fllog.py never prints "header", the game did not flip a page (or,
   with /3DA, wait for a retrace) yet.
 
@@ -143,6 +156,8 @@ MEASURED COST
   DOS Glide (test8): GLFLIP 600 frames at 50 fps on Voodoo Graphics,
   hooked vs not hooked, 2 boots x 4 runs each: -0.08% and -0.06% spare
   CPU (logging included); the DLL-start fix costs nothing after load.
+  Static Glide (test10): Archimedean Dynasty fps test9 vs test10 x3
+  alternating: 152.5 vs 152.1 (-0.3%, run spread +-3%) = noise.
   SBEMU / SC-55 load is unchanged (no IRQ0, PIT or keyboard hooks).
 
 TEST GAME
@@ -182,6 +197,8 @@ HARDWARE TEST CHECKLIST
       aborted" (expected) - just confirm the message.
   [ ] Archimedean Dynasty demo (DOS4GW FIGHT3 solo) logged the same way.
   [ ] Voodoo2: which GLIDE2X.OVL the game uses (size/date); does it log?
+  [ ] Carmageddon (CARM3DFX) or another game without GLIDE2X.OVL: does
+      it log? /STATUS "Static Glide" line: patched in 1, last error?
   [ ] Any 3dfx glitch, hang or sound problem only with FRAMELOG loaded.
   [ ] Send back: all CSV files (name them game-machine.csv), the
       FRAMELOG /STATUS outputs, the SBDIAG reports, and any problems
