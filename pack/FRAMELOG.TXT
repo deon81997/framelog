@@ -41,9 +41,12 @@ CABLE
 
 HOST PC (Windows or Linux)
   1. Install Python 3, then:  pip install pyserial matplotlib
-  2. In the HOST folder:
+     (Windows: or just double-click FLLOG.BAT, it installs them.)
+  2. In the HOST folder (also its own download: FRAMELOG-HOST-<ver>.zip):
        py fllog.py COM3 -o run.csv --label NAME
-     (or LOG.BAT COM3 run.csv NAME; on Linux python3 and /dev/ttyUSB0)
+     (or double-click FLLOG.BAT: it asks for the port and a name, or
+     LOG.BAT COM3 run.csv NAME; on Linux python3 and /dev/ttyUSB0.
+     REPORT.BAT turns all CSVs there into web pages, see HOST.TXT.)
      Start it before or while the game runs. Once the game PC answers
      it prints "header", then (test9) one status line, redrawn every
      second: frames so far, fps now / average, last and slowest frame

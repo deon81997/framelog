@@ -1,4 +1,5 @@
-# Publishes release/FRAMELOG-<ver>.zip as GitHub release v<ver> (tag on this commit) when it is not out yet.
+# Publishes release/FRAMELOG-<ver>.zip as GitHub release v<ver> (tag on this commit) when it is not out yet, with
+# release/FRAMELOG-HOST-<ver>.zip (the host-PC pack) next to it; a HOST zip added later is attached to its release.
 # Runs when a release zip or this file changes on main, or by hand (Actions > release > Run workflow).
 name: release
 on:
@@ -18,10 +19,18 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -e
-          for f in release/FRAMELOG-*.zip; do
+          for f in release/FRAMELOG-[0-9]*.zip; do
             v=${f#release/FRAMELOG-}; v=${v%.zip}; tag=v$v; t=${v#*-}
-            if gh release view "$tag" >/dev/null 2>&1; then echo "$tag is out already"; continue; fi
+            h=release/FRAMELOG-HOST-$v.zip
+            if gh release view "$tag" >/dev/null 2>&1; then
+              echo "$tag is out already"
+              if [ -f "$h" ] && ! gh release view "$tag" --json assets -q '.assets[].name' | grep -qx "$(basename "$h")"; then
+                gh release upload "$tag" "$h"
+              fi
+              continue
+            fi
             notes=$(grep -m1 -F ": $t.**" README.md | sed -e 's/<[^>]*>//g' -e 's/^ *//' || true)
             [ -n "$notes" ] || notes="FRAMELOG $v"
-            gh release create "$tag" "$f" --target "$GITHUB_SHA" --title "FRAMELOG $v" --notes "$notes"
+            assets=$f; [ -f "$h" ] && assets="$f $h"
+            gh release create "$tag" $assets --target "$GITHUB_SHA" --title "FRAMELOG $v" --notes "$notes"
           done

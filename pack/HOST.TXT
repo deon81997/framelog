@@ -1,0 +1,28 @@
+FRAMELOG host tools - the PC at the other end of the serial cable
+==================================================================
+
+What you need
+  Python 3 (https://www.python.org/, tick "Add to PATH" on Windows) and a
+  serial port (USB adapter is fine) with a null-modem cable to the game PC.
+  FLLOG.BAT installs pyserial + matplotlib the first time it runs. By hand:
+    py -m pip install pyserial matplotlib
+
+Windows, the easy way
+  1. Double-click FLLOG.BAT. It lists the serial ports, asks for the port
+     and a name for the run, then logs. Start the game on the game PC
+     (FRAMELOG must be loaded there), press Ctrl+C here when it is done.
+     The run is saved as NAME.csv in this folder, with its stats.
+  2. Repeat for every game / card / CPU you want to compare.
+  3. Double-click REPORT.BAT: it builds report\index.html from all the
+     CSVs here (the Retro GPU Shootout: a page per game, per card and per
+     run, CSV/JSON export, 3D charts if you say y) and opens it.
+
+Command line (Windows: py, Linux/Mac: python3 and /dev/ttyUSB0)
+  py fllog.py COM3 -o run.csv --label NAME [--gpu G --res 640x480 --game Q2]
+  py fllog.py COM3 --suite suite.ini -o results\ --report report\
+  py flstats.py a.csv b.csv --png compare.png
+  py flreport.py results\ -o report\ [--3d]
+  py flcap.py capture.avi -o run.csv --fps 70.086   (needs opencv-python numpy)
+  LOG.BAT COM3 run.csv NAME       (old short form of FLLOG.BAT)
+
+More: README.md here, https://github.com/deon81997/framelog/wiki/Host-Tools

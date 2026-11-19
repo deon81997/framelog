@@ -134,7 +134,7 @@ Not yet: 3DMark99 (it crashes in the emulator even without FRAMELOG, so it waits
 
 ## <picture><img src="docs/90s/star.gif" width="28" alt="*"></picture> Getting Started <picture><img src="docs/90s/star.gif" width="28" alt="*"></picture>
 
-1. **Download** the zip (below) and copy `FRAMELOG\` (DOS) or `WIN98\` (Windows 98) to the game PC, `HOST\` to the host PC.
+1. **Download** the zip (below) and copy `FRAMELOG\` (DOS) or `WIN98\` (Windows 98) to the game PC, `HOST\` to the host PC. The host part is also its own small download, `FRAMELOG-HOST-<version>.zip` on the same release page: unzip it, double-click `FLLOG.BAT` to log a run and `REPORT.BAT` for the web pages.
 2. Plug a **null-modem cable** between COM1 of the game PC and the host (a USB-serial adapter is fine on the host).
 3. **DOS:** `FRAMELOG /COM:1` after HDPMI32I (or after SC55), then start your game.
    **Windows 98:** run `FRAMELOG`, then start the game - or `FRAMELOG C:\GAMES\QUAKE2\QUAKE2.EXE +timedemo 1 ...`.
@@ -163,7 +163,7 @@ Every line of FRAMELOG, every test rig and every GIF on this page (yes, Vee too)
 
 ## <picture><img src="docs/90s/star.gif" width="28" alt="*"></picture> Download Zone <picture><img src="docs/90s/star.gif" width="28" alt="*"></picture>
 
-<a href="https://github.com/deon81997/framelog/releases/tag/v0.1-test10"><img src="docs/90s/btn-download.gif" alt="Download"></a> **[FRAMELOG-0.1-test10.zip](https://github.com/deon81997/framelog/releases/tag/v0.1-test10)** (release page) - DOS TSR, Windows 98 loader + hook DLL + test programs, host tools. A test build: please send me your CSVs. Older builds: [releases](https://github.com/deon81997/framelog/releases).
+<a href="https://github.com/deon81997/framelog/releases/tag/v0.1-test10"><img src="docs/90s/btn-download.gif" alt="Download"></a> **[FRAMELOG-0.1-test10.zip](https://github.com/deon81997/framelog/releases/tag/v0.1-test10)** (release page) - DOS TSR, Windows 98 loader + hook DLL + test programs, host tools. Host PC only: **[FRAMELOG-HOST-0.1-test10.zip](https://github.com/deon81997/framelog/releases/download/v0.1-test10/FRAMELOG-HOST-0.1-test10.zip)** (double-click `FLLOG.BAT`, then `REPORT.BAT`). A test build: please send me your CSVs. Older builds: [releases](https://github.com/deon81997/framelog/releases).
 
 Host tools live in their own repo: **[serial-bench](https://github.com/deon81997/serial-bench)**.
 
