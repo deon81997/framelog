@@ -29,6 +29,16 @@ static uint32_t putfn(uint8_t *d, uint32_t at)
         0xEB, 0x08, 0x09, 0xCB, 0x89, 0x9E, 0x28, 0x01, 0x00, 0x00, 0x5D, 0x5F, 0x5E, 0x5B, 0xC2, 0x04, 0x00 };
     memcpy(d + at, f, sizeof f); return at;
 }
+/* Glide 2.03h3 (Tomb Raider): 7-byte start, fence with 9 bytes between xchg and store, unfenced store too */
+static const uint8_t f203h3[] = { 0x53, 0x56, 0x57, 0x8B, 0x7C, 0x24, 0x10,
+    0x8B, 0x00, 0x25, 0x00, 0x00, 0x00, 0x70, 0xC1, 0xE8, 0x1C,
+    0x87, 0x05, 0xD0, 0x79, 0x26, 0x00, 0x8B, 0x46, 0x14, 0x8B, 0x15, 0x00, 0x12, 0x22, 0x00,
+    0x89, 0x90, 0x28, 0x01, 0x00, 0x00, 0x87, 0x05, 0xD0, 0x79, 0x26, 0x00, 0xEB, 0x06,
+    0x89, 0x98, 0x28, 0x01, 0x00, 0x00, 0xE8, 1, 2, 3, 4, 0x5F, 0x5E, 0x5B, 0xC2, 0x04, 0x00 };
+/* Glide 2.03h2 (Toshinden): start = mov ebx,[abs] (fixup), no fence -> patch the end (last 6 bytes) */
+static const uint8_t f203h2[] = { 0x53, 0x56, 0x57, 0x8B, 0x1D, 0x94, 0x9D, 0x2A, 0x00,
+    0x8B, 0x00, 0x25, 0x00, 0x00, 0x00, 0x70, 0xC1, 0xE8, 0x1C, 0x8B, 0x43, 0x04,
+    0x89, 0x90, 0x28, 0x01, 0x00, 0x00, 0xE8, 1, 2, 3, 4, 0x5F, 0x5E, 0x5B, 0xC2, 0x04, 0x00 };
 
 /* tiny PE: MZ, PE at 0x80, one code section raw 0x200..0x6200 at rva 0x1000, .reloc raw 0x6200 at rva 0x7000 */
 static uint8_t *mkpe(uint32_t *n, uint32_t fnat, int relocat)
@@ -47,35 +57,57 @@ static uint8_t *mkpe(uint32_t *n, uint32_t fnat, int relocat)
 
 static void synth(void)
 {
-    uint32_t n, fn; uint8_t code[GS_PRO];
+    uint32_t n; gs_hit g;
     struct mem m;
     uint8_t *d = mkpe(&n, 0x1234, 0x10);                     /* reloc far away */
     m.d = d; m.n = n;
-    CHECK(gs_probe(mrd, &m, n, &fn, code) == 0 && fn == 0x200 + 0x1234 && !memcmp(code, gs_pro, GS_PRO), "pe ok %x", fn);
+    CHECK(gs_probe(mrd, &m, n, &g) == 0 && g.fn == 0x200 + 0x1234 && g.n == 8 && !g.epi && !memcmp(g.code, gs_p8, 8), "pe ok %x", g.fn);
     free(d);
     d = mkpe(&n, 0x1234, 0x1234 + 4); m.d = d;               /* reloc inside the prologue */
-    CHECK(gs_probe(mrd, &m, n, &fn, code) == GS_FIX, "pe reloc in prologue");
+    CHECK(gs_probe(mrd, &m, n, &g) == GS_FIX, "pe reloc in prologue");
     free(d);
     d = mkpe(&n, 0x1234, 0x1234 - 3); m.d = d;               /* reloc spilling into byte 0 */
-    CHECK(gs_probe(mrd, &m, n, &fn, code) == GS_FIX, "pe reloc spill");
+    CHECK(gs_probe(mrd, &m, n, &g) == GS_FIX, "pe reloc spill");
     free(d);
     d = mkpe(&n, 0x1234, -1); m.d = d;                       /* no relocs */
-    CHECK(gs_probe(mrd, &m, n, &fn, code) == 0, "pe no relocs");
+    CHECK(gs_probe(mrd, &m, n, &g) == 0, "pe no relocs");
     putfn(d, 0x200 + 0x3000);                                /* second swap function */
-    CHECK(gs_probe(mrd, &m, n, &fn, code) == GS_MANY, "two hits");
+    CHECK(gs_probe(mrd, &m, n, &g) == GS_MANY, "two hits");
     free(d);
     /* window edges: function straddling every block boundary */
     for (uint32_t at = GS_BLK - 0x40; at < GS_BLK + 0x20; at++) {
         d = mkpe(&n, at - 0x200 + 0x200, -1); m.d = d;
-        int e = gs_probe(mrd, &m, n, &fn, code);
-        CHECK(e == 0 && fn == 0x200 + at, "edge %x e=%d fn=%x", at, e, fn);
+        int e = gs_probe(mrd, &m, n, &g);
+        CHECK(e == 0 && g.fn == 0x200 + at, "edge %x e=%d fn=%x", at, e, g.fn);
         free(d);
     }
     d = mkpe(&n, 0x1234, -1); d[0x200 + 0x1234 + 0x2C] = 0x90; m.d = d;   /* epilogue broken */
-    CHECK(gs_probe(mrd, &m, n, &fn, code) == GS_NONE, "no epilogue");
+    CHECK(gs_probe(mrd, &m, n, &g) == GS_NONE, "no epilogue");
+    free(d);
+    d = mkpe(&n, 0x1234, -1); memset(d + 0x200 + 0x1234, 0, 0x40);          /* 2.03h3: 7-byte start */
+    memcpy(d + 0x200 + 0x1234, f203h3, sizeof f203h3); m.d = d;
+    CHECK(gs_probe(mrd, &m, n, &g) == 0 && g.fn == 0x200 + 0x1234 && g.n == 7 && !g.epi && !memcmp(g.code, gs_p7, 7), "2.03h3 %x", g.fn);
+    d[0x200 + 0x1234 + 0x13] = 0x11;                                       /* fence addresses differ: unfenced store only */
+    CHECK(gs_probe(mrd, &m, n, &g) == 0 && g.fn == 0x200 + 0x1234, "2.03h3 one store");
+    memset(d + 0x200 + 0x1234 + 9, 0x90, 8);                               /* and no wait loop: nothing */
+    CHECK(gs_probe(mrd, &m, n, &g) == GS_NONE, "unfenced without wait");
+    free(d);
+    d = mkpe(&n, 0x1234, -1); memset(d + 0x200 + 0x1234, 0, 0x40);          /* 2.03h2: end patch */
+    memcpy(d + 0x200 + 0x1234, f203h2, sizeof f203h2); m.d = d;
+    uint32_t e6 = 0x200 + 0x1234 + sizeof f203h2 - 6;
+    CHECK(gs_probe(mrd, &m, n, &g) == 0 && g.fn == e6 && g.n == 6 && g.epi && !memcmp(g.code, gs_e6, 6), "2.03h2 %x", g.fn);
+    free(d);
+    d = mkpe(&n, 0x1234, -1); memset(d + 0x200 + 0x1234, 0, 0x40);
+    memcpy(d + 0x200 + 0x1234, f203h2, sizeof f203h2); m.d = d;
+    d[e6 - 1] = 0x5D;                                                       /* ebp popped but no 8-byte start: refuse */
+    CHECK(gs_probe(mrd, &m, n, &g) == GS_NONE, "5D end without start");
+    free(d);
+    d = mkpe(&n, 0x1234, 0x1234 + sizeof f203h2 - 8); memset(d + 0x200 + 0x1234, 0, 0x40);   /* reloc before the end */
+    memcpy(d + 0x200 + 0x1234, f203h2, sizeof f203h2); m.d = d;
+    CHECK(gs_probe(mrd, &m, n, &g) == GS_FIX, "2.03h2 reloc into end");
     free(d);
     static uint8_t mzonly[0x400] = { 'M', 'Z' }; m.d = mzonly; m.n = sizeof mzonly;
-    CHECK(gs_probe(mrd, &m, m.n, &fn, code) == GS_FMT, "real-mode exe");
+    CHECK(gs_probe(mrd, &m, m.n, &g) == GS_FMT, "real-mode exe");
 }
 
 int main(int argc, char **argv)
@@ -89,11 +121,11 @@ int main(int argc, char **argv)
         fseek(f, 0, SEEK_END); long sz = ftell(f); rewind(f);
         uint8_t *d = malloc(sz); if (fread(d, 1, sz, f) != (size_t)sz) sz = 0; fclose(f);
         struct mem m = { d, (uint32_t)sz };
-        uint32_t fn = 0; uint8_t code[GS_PRO];
-        int e = gs_probe(mrd, &m, m.n, &fn, code);
+        gs_hit g = { 0 };
+        int e = gs_probe(mrd, &m, m.n, &g);
         char got[32];
         if (e) snprintf(got, sizeof got, "%s", e == GS_NONE ? "none" : e == GS_FMT ? "fmt" : e == GS_MANY ? "many" : e == GS_FIX ? "fix" : "io");
-        else snprintf(got, sizeof got, "0x%x", fn);
+        else snprintf(got, sizeof got, g.epi ? "end:0x%x" : "0x%x", g.fn);
         int ok = !eq || !strcmp(eq, got) || (!strcmp(eq, "none") && !strcmp(got, "fmt"));
         printf("%s %s %s%s%s\n", ok ? "ok  " : "FAIL", argv[i], got, eq ? " want " : "", eq ? eq : "");
         if (!ok) fails++;
