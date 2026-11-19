@@ -166,6 +166,13 @@ Test downloads: OpenWatcom v2 snapshot (github open-watcom/open-watcom-v2 Curren
 /tmp/dl/ow), dgVoodoo 1.x source (dege-diosg/dgVoodoo, OVL layout), sezero/glide (glimport.asm = __loadme thunks),
 efliks/nostalgic-glide-demo (Voodoo1 SST1 OVL, checked with dos/glide/leinfo.py).
 
+## 2026-11-18 host pack: FRAMELOG-HOST-<ver>.zip on every release
+
+pack/mkhost.sh (also called by mkzip.sh) builds HOST/ = FLLOG.BAT (double-click logger), REPORT.BAT (double-click
+shootout pages, optional --3d), LOG.BAT, HOST.TXT, serial-bench tools incl. flcap.py, 90s/ art; mkzip.sh also writes
+release/FRAMELOG-HOST-<ver>.zip and release.yml attaches it (to a release that is out too). v0.1-test10 has it
+(serial-bench 6283bef). Next release: mkzip.sh as usual, both zips land in release/; commit both.
+
 ## 2026-11-18 serial-bench: flreport = Retro GPU Shootout (host only, framelog code untouched)
 
 serial-bench d82a78e: flreport.py writes index (summary table per GPU), game-*.html per game across GPUs + CPUs
