@@ -84,16 +84,18 @@ efliks/nostalgic-glide-demo `53 56 57 55 8B 5C 24 14` (8 bytes) - both pass the 
 - The OVL's Watcom DLL start code needs DOS/4GW as host (INT 21h 35E9h hand-over, FF00h check) and aborts under HDPMI32i
   with or without FRAMELOG; glhook.c gl_dllfix patches both while the OVL is read (thunks at GL_DLL, /STATUS "DLL start
   fixes 2"). Extreme Assault 1.1.1 demo (OVL 2.31): 3706/3706 frames; Archimedean Dynasty demo (2.42): 6552/6552;
-  Redguard demo: logs; Carmageddon (static Glide): see "Static Glide". Rig: dos/glide/gv1.sh.
+  Redguard demo (AD's OVL 2.42): 1275/1275 frames, clean quit; Carmageddon (static Glide): see "Static Glide". Rig: dos/glide/gv1.sh.
 - Cost on Voodoo Graphics (test8 exe 03b84a18, AD's OVL 2.42, HDPMI32i, FRAMELOG /AUTO, GLFLIP 600 @ 50 fps, hooked
   GLIDE2X.OVL vs unhooked GLX.OVL alternating, 4 pairs per boot, 2 boots in opposite order): spare loops 385.402M vs
   385.694M = -0.076 %, 385.432M vs 385.668M = -0.061 % (logging 600 frames included), 0 lost; gl_dllfix has no runtime
   part. SBEMU + SC-55 (perf86.sh idle) test7 exe vs test8 exe: SC55LOG 0.48x, SBDIAG 61 % CPU, 0.0 % lost, longest
   interrupt 3.57-3.61 ms on both. GLFLIP's swap count includes ~74 per run that grSstWinOpen/Close make themselves.
-- Redguard quit (11/18, 2 tries, gv1.sh +Key): Esc #1 closes the intro letter, Esc #2 opens the book menu (SAVE
-  highlighted), Return selects; 86Box dropped 2 of 6 held Downs 5 s apart (landed on MOVIES), so no clean quit and no
-  /STATUS swaps-vs-frames yet. Next try: in the rig's copy of MENU.INI put `default[6] = 1` (QUIT) instead of
-  `default[0]`, then Esc, Esc, Return - or read each Down from a screenshot.
+- Redguard quit (11/18, solved): rig copy of MENU.INI page0 `default[6] = 1` (QUIT highlighted when the book menu opens;
+  held Downs got lost) + priavte testrig/framelog/rgkeys.py (screen-state driver, refs rgref/: letter -> held Esc, held Esc
+  until the book menu, Return, wait for the DOS prompt). Fresh image per run (gv1.sh REBUILD=1): a quit leaves
+  C:\RG\SAVEGAME and the next start opens the menu without the letter. test10 exe b3dad09b (= main): grBufferSwap 1275 = frames 1275,
+  0 lost, CSV 1275 rows, median 28.7 fps (84 s: intro, letter, walk-in view, menu). test8 exe: 1240 swaps vs 1225 frames =
+  its < 0.5 ms swap merge (15 such frames in the main CSV), fixed on main by the static Glide commit.
 
 ## Static Glide (Glide linked into the game, no GLIDE2X.OVL), 11/18
 

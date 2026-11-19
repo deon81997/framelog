@@ -1,5 +1,22 @@
 # HANDOFF — FRAMELOG
 
+## 2026-11-18 Redguard demo: scripted clean quit, grBufferSwap = frames (86Box Voodoo Graphics)
+
+Done: rig copy of Redguard's MENU.INI with page0 `default[6] = 1` (QUIT highlighted; `default[0]` commented) + new
+priavte testrig/framelog/rgkeys.py (screen-state driver like carmkeys.py; refs testrig/framelog/rgref: letter, game,
+menu, dos): letter -> held Esc, held Esc until the book menu, Return, wait for the DOS prompt (1st try every run, ~80 s).
+Result (test10 exe b3dad09b = main build, AD's OVL 2.42, HDPMI32i): /STATUS grBufferSwap 1275 = flips 1275 = frames
+logged 1275 = CSV rows, 0 lost, median 28.7 fps over 84 s. test8 exe: 1240 swaps vs 1225 frames = its old < 0.5 ms
+swap merge (15 such frames in the new CSV), gone since the static Glide commit. docs/GLIDE.md Redguard lines updated.
+Gotcha: a quit writes C:\RG\SAVEGAME; the next start opens the book menu (SAVE highlighted, no letter): REBUILD=1 always.
+Not done: serial-bench GAMES.md Redguard row + fixture (session could not attach serial-bench): staged in priavte
+pending/serial-bench-redguard/ (CSV + row text) - apply in a chat with serial-bench attached.
+Resume: Redguard dir = unshield x data1.cab (Common_Files/* + 3DFX_Art/fxart) + RGFX.EXE from the rar + AD's GLIDE2X.OVL
++ the MENU.INI edit, then `REBUILD=1 W=/tmp/rg1 LOG=redguard sh dos/glide/gv1.sh 200 /tmp/dl/rg RG 'C:\GL\HDPMI32I.EXE -r -x
+> NUL' 'C:\GL\FRAMELOG /AUTO > C:\GL\LOAD.TXT' 'CD \RG' 'RGFX' 'C:\GL\FRAMELOG /STATUS > C:\GL\ST.TXT'` and after 25 s
+`python3 priavte/testrig/framelog/rgkeys.py /tmp/rg1/vm priavte/testrig/framelog/rgref /tmp/rgk`.
+Next 3: (1) serial-bench Redguard row + fixture from priavte pending/; (2) real Voodoo 1/2 PC run; (3) wiki Game Coverage.
+
 ## 2026-11-18 test10: static Glide zip (Carmageddon)
 
 Done: release/FRAMELOG-0.1-test10.zip = test9 zip with FRAMELOG/FRAMELOG.EXE (DJGPP v3.4 build of main d862df7, dos/
