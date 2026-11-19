@@ -170,7 +170,7 @@ efliks/nostalgic-glide-demo (Voodoo1 SST1 OVL, checked with dos/glide/leinfo.py)
 
 serial-bench d82a78e: flreport.py writes index (summary table per GPU), game-*.html per game across GPUs + CPUs
 (avg / 1% / 0.1% low bars, frame-time overlay, percentile curves, ranked table, run notes), gpu-*.html, compare.html,
-run-*.html (metadata, stats, histogram, CSV), shootout.csv/.json; 90s look. Real fixtures tests/fixtures/86box-v3: Q2
+run-*.html (metadata, stats, histogram, CSV), shootout.csv/.json; 90s look; --3d adds 3D columns/waterfall/matrix. Real fixtures tests/fixtures/86box-v3: Q2
 demo GL 640x480 39.0 / 800x600 38.0 fps, soft 320x240 73.4 / 640x480 43.3 fps over the whole log incl. load (Q2 soft
 640x480 itself 39.9 fps); 86Box PII-450 Voodoo3, test6. Old DOS 86Box CSVs (Duke/ROTT/FLIP) still look-alikes only.
 Wiki Host-Tools edit not posted (wiki push = proxy 403, Chrome offline): priavte wiki/pending/framelog-Host-Tools.md.
