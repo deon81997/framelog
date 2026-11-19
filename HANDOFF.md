@@ -1,5 +1,25 @@
 # HANDOFF — FRAMELOG
 
+## 2026-11-18 Static Glide 2.03: Tomb Raider 3Dfx + Toshinden 2 3Dfx demos log on 86Box Voodoo Graphics
+
+Done: glstatic.c signature anchored on the swapbufferCMD store `89 /r 28 01 00 00`: fenced (`87 05 A` after, same A
+<= 16 bytes before; 2.03h3-2.42) or unfenced with the swaps-pending wait `25 00 00 00 70 C1 E8 1C` <= 180h before
+(2.03h2); end `5F 5E 5B C2 04 00` <= 50h after; start 8 bytes (ebp, 2.11+) or `53 56 57 8B 7C 24 10` (7, 2.03h3), must
+agree with the end; no known start -> end patch (`FF 25` jmp thunk that runs pop x3 / ret 4). LE fixup check by source
+size. gs_probe returns gs_hit {fn, n, epi, code}. Carmageddon/OVL path byte-identical (n = 8).
+Tests: gstest.sh PASS, 52 files (47 of 7 demos + the other chat's 3 patches + 2): hits only where expected.
+86Box PII-450 Voodoo Graphics (gv1.sh, SB=/tmp/sbh = HOST/ of the test9 zip): Tomb Raider 3Dfx demo (TOMB, LE, 2.03h3)
+2156 = 2156, 0 lost, ~30 fps, quits by itself; Toshinden 2 3Dfx demo (TSD -fx, 2.03h2, no fence, end patch) 1761 swaps
+= 1761 logged, 0 lost, CSV 1760 (last record stuck in the ring, known), fight 50.8 fps; Carmageddon 7659 = 7659, XA
+329 = 329 (title), AD 2908 = 2908 (quit: Esc, 1, 1). Screamer 2 demo = software only (scan negative case).
+Demos: priavte store-dosglide-demos 329728d (+ tomb3dem.zip, tsddemo_3dfx.zip, SCREAMER2.zip; SHA256SUMS).
+Keys: priavte testrig/framelog/tsdkeys.py (+ tsdref/). serial-bench docs/GAMES.md rows NOT written (add_repo refused):
+text in priavte pending/serial-bench-games-glstatic2.md.
+Open: no 2.1x without the fence found; ring flush of the last record; real Voodoo 1/2 run.
+Resume: restore as below + `git clone -b store-dosglide-demos` -> /tmp/dl/{tr1,tsd,scr2}; TR: `W=/tmp/tr LOG=tr SB=/tmp/sbh sh
+dos/glide/gv1.sh 120 /tmp/dl/tr1/tomb3dem TR 'C:\GL\HDPMI32I.EXE -r -x > NUL' 'C:\GL\FRAMELOG /AUTO > C:\GL\LOAD.TXT' 'CD \TR'
+'TOMB' 'C:\GL\FRAMELOG /STATUS > C:\GL\ST.TXT'`; TSD: same with 380 /tmp/dl/tsd TSD ... 'TSD -fx' + tsdkeys.py /tmp/tsd/vm REFS /tmp/tk.
+
 ## 2026-11-18 Static Glide (Carmageddon): grBufferSwap by signature in the EXE/BDD reads - works on 86Box Voodoo Graphics
 
 Done: glide/glstatic.c (+ .h; #included by glhook.c): the stub also reports opens of *.EXE / *.BDD by a PM program;
