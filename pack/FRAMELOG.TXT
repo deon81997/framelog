@@ -155,6 +155,18 @@ WHICH GAMES LOG (tested in 86Box, Pentium II 450)
   If fllog.py never prints "header", the game did not flip a page (or,
   with /3DA, wait for a retrace) yet.
 
+CARD TEST BATCHES (test13: test your own card, no typing)
+  On the host: HOST\CARDS.BAT (port + PC name once, then a part number).
+  Here, in MS-DOS mode (needs HDPMI32I.EXE in this folder, C:\HDPMI,
+  C:\SC55 or C:\NUKEDSB; Duke 3D in C:\DUKE3D, else CARDS1 DUKEDIR):
+    CD \FRAMELOG, CARDS1    FLIP, VESA FLIP, Duke 320x200 + 640x480
+    reboot, CARDS2           FLIP V with /3DA (it says if you need CARDS3)
+    reboot, CARDS3           /BANK: Duke 640x480 + FLIP K (banked cards)
+  Press a key when the host says "waiting for step"; in Duke press Esc,
+  Q, Y after about a minute. DUKECFG.EXE sets Duke's screen mode for each
+  step and puts your DUKE3D.CFG back afterwards. Results: C:\FLRES.
+  Windows 98: double-click WIN98\CARDS98.BAT (host part 4 first).
+
 VIDEO CARDS (86Box, Pentium II 450, test12)
   Every card below: FLIP 20 70 and FLIP 20 70 10 B (VESA) frames =
   flips, 0 lost, 70.00 fps; Duke ScreenMode 0 (mode X) 0 lost; the

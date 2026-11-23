@@ -1,5 +1,16 @@
 # HANDOFF — FRAMELOG
 
+## 2026-11-23 test13: card test batches (no typing)
+
+Done: pack/CARDS1/2/3.BAT (DOS: HDPMI32I found in FRAMELOG dir / C:\HDPMI / C:\SC55 / C:\NUKEDSB; steps FLIP, FLIP B, Duke
+320x200 + 640x480 | /3DA FLIP V, says "run CARDS3" when S4.TXT shows bank switches | /BANK Duke 640x480 + FLIP K;
+PAUSE before each step, /STATUS to C:\FLRES\S*.TXT), WIN98\CARDS98.BAT (DDTEST, D3DTEST, GLTEST, Q2 soft, logs to
+C:\FLRES), HOST\CARDS.BAT (port + PC once; parts 1-3 = one fllog --idle 15 per step -> results\<pc>\<pc>-<step>.csv;
+part 4 = --suite r1-r6 gap 0). New dos/tools/dukecfg.c (DUKECFG DIR MODE W H, backup DUKE3D.FLB, /RESTORE).
+Tested on 86Box Trio64 with FLNOPAUSE=1 FLNODUKE=1 (test-only env): CARDS1 S1/S2 1274 flips, CARDS2 439/438 + the
+CARDS3 hint branch, CARDS3 FLIP K 1274 wraps; DUKECFG on the host. Not tested: CARDS.BAT/CARDS98.BAT (Windows-only).
+test13 = test12 zip + those files (FRAMELOG.EXE unchanged).
+
 ## 2026-11-23 test12: video cards (86Box, DOS + Win98) + FRAMELOG /BANK
 
 Done: 86Box (store-86rig 4fef696) PII-450, 7 cards: Cirrus 5446, S3 Trio64, ViRGE/DX, ET4000/W32p, Mystique, Mach64VT2,

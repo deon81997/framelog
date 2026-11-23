@@ -1,6 +1,6 @@
 #!/bin/sh
 # mkzip.sh [SUFFIX] - build release/FRAMELOG-<FL_VER><SUFFIX>.zip (e.g. ./pack/mkzip.sh -test1)
-#   FRAMELOG/ FRAMELOG.EXE FLIP.EXE FRAMELOG.TXT   (game PC, DOS 8.3 names)
+#   FRAMELOG/ FRAMELOG.EXE FLIP.EXE FRAMELOG.TXT DUKECFG.EXE CARDS1-3.BAT (card test)   (game PC, DOS 8.3 names)
 #   WIN98/    FRAMELOG.EXE FLHOOK.DLL FRAMEL98.TXT, TEST/ DDTEST DDDYN D3DTEST D3D8TEST D3D9TEST GLTEST G2TEST
 #   HOST/     FLLOG.BAT LINKTEST.BAT REPORT.BAT LOG.BAT HOST.TXT + the serial-bench tools (host PC; pack/mkhost.sh)
 # and release/FRAMELOG-HOST-<FL_VER><SUFFIX>.zip = HOST/ alone, the download for the host PC.
@@ -19,13 +19,16 @@ NAME=FRAMELOG-$VER${1:-}
 ZIP=$ROOT/release/$NAME.zip
 HZIP=$ROOT/release/FRAMELOG-HOST-$VER${1:-}.zip
 
-make -C "$ROOT/dos" output/framelog.exe output/flip.exe
+make -C "$ROOT/dos" output/framelog.exe output/flip.exe output/dukecfg.exe
 make -C "$ROOT/win98" check
 
 TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
 mkdir -p "$TMP/FRAMELOG" "$TMP/WIN98/TEST" "$ROOT/release"
 cp "$ROOT/dos/output/framelog.exe" "$TMP/FRAMELOG/FRAMELOG.EXE"
 cp "$ROOT/dos/output/flip.exe" "$TMP/FRAMELOG/FLIP.EXE"
+cp "$ROOT/dos/output/dukecfg.exe" "$TMP/FRAMELOG/DUKECFG.EXE"
+for b in CARDS1 CARDS2 CARDS3; do cp "$ROOT/pack/$b.BAT" "$TMP/FRAMELOG/"; done
+cp "$ROOT/pack/CARDS98.BAT" "$TMP/WIN98/"
 cp "$ROOT/pack/FRAMELOG.TXT" "$TMP/FRAMELOG/FRAMELOG.TXT"
 cp "$ROOT/win98/FRAMELOG.EXE" "$ROOT/win98/FLHOOK.DLL" "$TMP/WIN98/"
 cp "$ROOT/pack/FRAMEL98.TXT" "$TMP/WIN98/FRAMEL98.TXT"

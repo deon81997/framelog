@@ -2,7 +2,7 @@
 CC := i586-pc-msdosdjgpp-gcc
 CFLAGS := -fcommon -O2 -march=pentium -Wall -Ilib -D__DOS__ -DNDEBUG $(if $(VESADBG),-DVESADBG)   # make VESADBG=1: INT 10h VBE calls as text on the UART
 LIBSRC := lib/hdpmipt.c lib/untrapio.c lib/pic.c lib/serial.c lib/dpmi/dpmi.c lib/dpmi/dpmi_dj2.c lib/dpmi/dpmi_tsr.c lib/dpmi/xms.c lib/dpmi/dbgutil.c
-all: output/framelog.exe output/flip.exe output/rmflip.com output/fltsr.exe output/fltest.exe
+all: output/framelog.exe output/flip.exe output/dukecfg.exe output/rmflip.com output/fltsr.exe output/fltest.exe
 output/framelog.exe: framelog.c flstate.h flmeta.h vesastub.h glide/glhook.c glide/glstatic.c glide/glstatic.h glide/glstub.h lib/uart.h $(LIBSRC)
 	@mkdir -p output
 	$(CC) $(CFLAGS) -I. -o $@ framelog.c $(LIBSRC) -s
@@ -17,6 +17,9 @@ glide/glstub.h: glide/glstub.asm
 output/rmflip.com: tools/rmflip.asm
 	@mkdir -p output
 	nasm -f bin -o $@ tools/rmflip.asm
+output/dukecfg.exe: tools/dukecfg.c
+	@mkdir -p output
+	$(CC) $(CFLAGS) -o $@ tools/dukecfg.c -s
 output/flip.exe: tools/flip.c
 	@mkdir -p output
 	$(CC) $(CFLAGS) -o $@ tools/flip.c -s

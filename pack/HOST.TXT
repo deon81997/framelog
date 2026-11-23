@@ -17,6 +17,15 @@ Windows, the easy way
      CSVs here (the Retro GPU Shootout: a page per game, per card and per
      run, CSV/JSON export, 3D charts if you say y) and opens it.
 
+Video-card test, the easy way (test13; no typing on either PC)
+  Host: double-click CARDS.BAT, give the port and the PC's name once, pick
+  the part. Retro PC, MS-DOS mode: CD \FRAMELOG, then CARDS1 (part 1),
+  reboot + CARDS2 (part 2), and CARDS3 only if CARDS2 asks for it. Windows
+  98: pick part 4 here, then double-click WIN98\CARDS98.BAT. Press a key
+  on the retro PC when this window says "waiting for step"; in Duke press
+  Esc, Q, Y after about a minute. CSVs land in results\<PC name>\, the
+  retro PC's files in C:\FLRES. Send both folders.
+
 Command line (Windows: py, Linux/Mac: python3 and /dev/ttyUSB0)
   py fllog.py COM3 -o run.csv --label NAME [--gpu G --res 640x480 --game Q2]
   py fllog.py COM3 --suite suite.ini -o results\ --report report\
