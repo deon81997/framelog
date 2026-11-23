@@ -1,5 +1,25 @@
 # HANDOFF — FRAMELOG
 
+## 2026-11-23 test11: serial link diagnostics (host only) + serial-bench Redguard/TR/Toshinden rows
+
+Done: user's real link (Tripp Lite USB-serial = COM1 on the main PC) gave frames=0 junk=0 (DBGLOG nothing too) = no
+byte arrives. serial-bench 8b2bb47 fllog.py: CountingPort counts every byte; open errors -> "PORT BUSY" / "NO SUCH
+PORT (ports here: ...)" exit 2 (no traceback); end of run: "NO BYTES AT ALL from the game PC" exit 3 (empty CSV
+deleted), bytes but no frame = baud verdict exit 1, frames = 0 (suite same); live hint after 15 s without a byte;
+--raw = link test (prints bytes, text + hex). tests/test_link.py (5; full suite 78 pass, needs pyserial). pack/
+FLLOG.BAT branches on errorlevel 2/3/1; new pack/LINKTEST.BAT (fllog --raw --baud 9600 + the DOS MODE/ECHO lines);
+HOST.TXT "No bytes" checklist (port busy, null-modem, BIOS COM1, D810 docked before power-on, LINKTEST, COM2, /STATUS
+host bytes vs bytes sent). mkhost.sh lists LINKTEST.BAT. test11 = test10 zip with HOST/ rebuilt by mkhost.sh (main
+zip's HOST now = the HOST pack, flreport/flcap/BATs included); FRAMELOG/ and WIN98/ byte-identical to test10.
+serial-bench GAMES.md: Redguard -> works (1275 = 1275, fixture replaced), Tomb Raider 3Dfx + Toshinden 2 3Dfx rows +
+fixtures (from priavte pending/, deleted there); DOS-GLIDE mode text says static Glide is covered.
+Not done: ring flush of the last record (dos/, left alone): pump() runs only from traps, so after a game's last swap
+the UART ring tail (e.g. behind a big M record) and a host X sit until the next trap. Fix idea: FLSTATE exports the
+resident U/ring linear address and FRAMELOG /STATUS (or /FLUSH) drains it in the foreground (busy-wait THRE, <= 100 ms)
++ handles a pending X; verify with TSD (1761 vs CSV 1760) in gv1.sh. counter.gif still 9.
+Next 3: (1) user's link checklist results (HOST.TXT "No bytes"); (2) real Voodoo 1/2 run (FRAMELOG.TXT VOODOO list);
+(3) ring flush as above.
+
 ## 2026-11-18 Static Glide 2.03: Tomb Raider 3Dfx + Toshinden 2 3Dfx demos log on 86Box Voodoo Graphics
 
 Done: glstatic.c signature anchored on the swapbufferCMD store `89 /r 28 01 00 00`: fenced (`87 05 A` after, same A

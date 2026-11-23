@@ -2,7 +2,7 @@
 # mkzip.sh [SUFFIX] - build release/FRAMELOG-<FL_VER><SUFFIX>.zip (e.g. ./pack/mkzip.sh -test1)
 #   FRAMELOG/ FRAMELOG.EXE FLIP.EXE FRAMELOG.TXT   (game PC, DOS 8.3 names)
 #   WIN98/    FRAMELOG.EXE FLHOOK.DLL FRAMEL98.TXT, TEST/ DDTEST DDDYN D3DTEST D3D8TEST D3D9TEST GLTEST G2TEST
-#   HOST/     FLLOG.BAT REPORT.BAT LOG.BAT HOST.TXT + the serial-bench tools (host PC; pack/mkhost.sh)
+#   HOST/     FLLOG.BAT LINKTEST.BAT REPORT.BAT LOG.BAT HOST.TXT + the serial-bench tools (host PC; pack/mkhost.sh)
 # and release/FRAMELOG-HOST-<FL_VER><SUFFIX>.zip = HOST/ alone, the download for the host PC.
 # Rebuilds the DOS exes first (DJGPP i586-pc-msdosdjgpp-gcc must be on PATH) and the Win98 files (make -C win98:
 # i686-w64-mingw32-gcc, msvcrt; the import check win98/tools/chkimp98.py must pass).

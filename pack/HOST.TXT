@@ -25,4 +25,29 @@ Command line (Windows: py, Linux/Mac: python3 and /dev/ttyUSB0)
   py flcap.py capture.avi -o run.csv --fps 70.086   (needs opencv-python numpy)
   LOG.BAT COM3 run.csv NAME       (old short form of FLLOG.BAT)
 
+No bytes ("NO BYTES AT ALL" from FLLOG, or frames=0 junk=0)
+  Not one byte reached this PC, so the link is dead - not the game. Check,
+  in this order (stop at the first one that fixes it):
+  1. Port here: FLLOG says "PORT BUSY" when another program has it (DBGLOG,
+     PuTTY, a second FLLOG) - close it. Device Manager > Ports shows the
+     USB adapter's COM number and no yellow mark (driver installed).
+  2. Cable: NULL-MODEM (crossed TX/RX). A straight 9-pin cable sends
+     nothing across; a null-modem adapter on it fixes that.
+  3. Game PC: its COM port is enabled in the BIOS (COM1 = 3F8, IRQ 4). Dell
+     D810: the serial port is on the dock - dock it BEFORE power-on (no COM
+     port after a hot dock) and set its serial port to COM1 in BIOS (F2).
+     FRAMELOG says "no UART at 3F8" when the port is not there.
+  4. Two-minute test without FRAMELOG: double-click LINKTEST.BAT here
+     (listens at 9600), then on the game PC in plain DOS:
+         MODE COM1:9600,N,8,1
+         ECHO HELLO > COM1
+     HELLO here = cable and ports work: go back to FLLOG (115200, FRAMELOG
+     /COM:1). Nothing = cable, BIOS or dock; try COM2 (MODE COM2:...) in
+     case the dock's port is COM2, then FRAMELOG /COM:2.
+  5. Link works but still no frames: run FRAMELOG /STATUS on the game PC
+     after a try - "host bytes" 0 = this PC's S bytes never arrive (start
+     with FRAMELOG /AUTO instead); "bytes sent" 0 = no game frame was seen.
+  "bytes came but no FRAMELOG frame" = baud differs: same number at both
+  ends (FRAMELOG /COM:1,115200 and fllog --baud 115200, the default).
+
 More: README.md here, https://github.com/deon81997/framelog/wiki/Host-Tools
