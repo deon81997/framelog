@@ -37,7 +37,7 @@
 
 <br><br>
 
-<a href="https://github.com/deon81997/framelog/releases/tag/v0.1-test11"><img src="docs/90s/btn-download.gif" alt="Download"></a>
+<a href="https://github.com/deon81997/framelog/releases/tag/v0.1-test12"><img src="docs/90s/btn-download.gif" alt="Download"></a>
 <picture><img src="docs/90s/btn-dos.gif" alt="Powered by DOS 7.1"></picture>
 <picture><img src="docs/90s/btn-win98.gif" alt="Runs on Windows 98 SE"></picture>
 <picture><img src="docs/90s/btn-serial.gif" alt="115200 baud"></picture>
@@ -80,6 +80,8 @@
 </div>
 
 ## <picture><img src="docs/90s/star.gif" width="28" alt="*"></picture> What's New <picture><img src="docs/90s/star.gif" width="28" alt="*"></picture>
+<picture><img src="docs/90s/new.gif" alt="NEW!"></picture> **11/23/2026: test12.** **Tested on seven video cards, and banked VESA games log now.** FLIP, VESA flips, Duke 3D and Windows 98 (DirectDraw, Direct3D, OpenGL, Quake II) were run on 86Box with Cirrus, S3 Trio64 and ViRGE, Tseng ET4000, Matrox Mystique, ATI Mach64 and Voodoo3: 0 lost frames everywhere, Quake II within 0.3% of its own fps, and the CSV names the right card. New `FRAMELOG /BANK` for VESA games on older cards that copy each frame in 64 KB banks instead of flipping (Duke 3D 640x480 on S3/Cirrus/Tseng); `/STATUS` tells you when to use it. Table: serial-bench docs/CARDS.md.
+
 <picture><img src="docs/90s/new.gif" alt="NEW!"></picture> **11/23/2026: test11.** **Clear answers when the serial link is dead.** `FLLOG.BAT` now tells "PORT BUSY" (another program has the COM port) from "NO SUCH PORT" and from "NO BYTES AT ALL from the game PC" (cable, BIOS or dock - not the game), instead of a traceback or an empty CSV; bytes without frames = baud mismatch. New `LINKTEST.BAT`: listens at 9600 baud while the game PC types `MODE COM1:9600,N,8,1` and `ECHO HELLO > COM1` - HELLO on screen = cable and ports work. HOST.TXT has a "No bytes" checklist. Host files only; DOS and Windows 98 files are test10's, unchanged.
 
 <picture><img src="docs/90s/new.gif" alt="NEW!"></picture> **11/18/2026: test10.** **Carmageddon and other games with Glide built in.** Some DOS Glide games have no GLIDE2X.OVL: Glide is inside the game's own files (Carmageddon: CARM3DFX.EXE + 3DFX_DOS.BDD). FRAMELOG now scans .EXE and .BDD files once while the game loads, finds grBufferSwap and times every swap there too. Tested on a Voodoo Graphics in 86Box: Carmageddon 6887 swaps = 6887 frames, 0 lost; Extreme Assault and Archimedean Dynasty still exact. Cost: within noise while playing, 0.2-0.3 s once at load. `FRAMELOG /STATUS` has a new "Static Glide" line (error codes 20-24 in FRAMELOG.TXT). Windows 98 and host files are test9's, unchanged.
@@ -163,7 +165,7 @@ Every line of FRAMELOG, every test rig and every GIF on this page (yes, Vee too)
 
 ## <picture><img src="docs/90s/star.gif" width="28" alt="*"></picture> Download Zone <picture><img src="docs/90s/star.gif" width="28" alt="*"></picture>
 
-<a href="https://github.com/deon81997/framelog/releases/tag/v0.1-test11"><img src="docs/90s/btn-download.gif" alt="Download"></a> **[FRAMELOG-0.1-test11.zip](https://github.com/deon81997/framelog/releases/tag/v0.1-test11)** (release page) - DOS TSR, Windows 98 loader + hook DLL + test programs, host tools. Host PC only: **[FRAMELOG-HOST-0.1-test11.zip](https://github.com/deon81997/framelog/releases/download/v0.1-test11/FRAMELOG-HOST-0.1-test11.zip)** (double-click `FLLOG.BAT`, then `REPORT.BAT`). A test build: please send me your CSVs. Older builds: [releases](https://github.com/deon81997/framelog/releases).
+<a href="https://github.com/deon81997/framelog/releases/tag/v0.1-test12"><img src="docs/90s/btn-download.gif" alt="Download"></a> **[FRAMELOG-0.1-test12.zip](https://github.com/deon81997/framelog/releases/tag/v0.1-test12)** (release page) - DOS TSR, Windows 98 loader + hook DLL + test programs, host tools. Host PC only: **[FRAMELOG-HOST-0.1-test12.zip](https://github.com/deon81997/framelog/releases/download/v0.1-test12/FRAMELOG-HOST-0.1-test12.zip)** (double-click `FLLOG.BAT`, then `REPORT.BAT`). A test build: please send me your CSVs. Older builds: [releases](https://github.com/deon81997/framelog/releases).
 
 Host tools live in their own repo: **[serial-bench](https://github.com/deon81997/serial-bench)**.
 

@@ -1,5 +1,26 @@
 # HANDOFF — FRAMELOG
 
+## 2026-11-23 test12: video cards (86Box, DOS + Win98) + FRAMELOG /BANK
+
+Done: 86Box (store-86rig 4fef696) PII-450, 7 cards: Cirrus 5446, S3 Trio64, ViRGE/DX, ET4000/W32p, Mystique, Mach64VT2,
+Voodoo3 (no Riva/TNT/Rage/ET6000 in 86Box). DOS: FLIP / FLIP B / FLIP K (/BANK) / FLIP V (/3DA) all frames = flips - 1,
+0 lost, 70.00 fps; Duke SM0 0 lost; CSV gpu/driver = the card's VBE OEM strings (VBE 1.2: Cirrus/S3/Tseng, 2.0 Matrox/ATI,
+3.0 Voodoo3). Win98 (inbox drivers from C:\WINCD, Voodoo3 VM copy + gfxcard): DDTEST 599/600, D3DTEST 299/300 (ViRGE,
+Mystique, V3), GLTEST 299/300 (V3 ICD), Q2 soft own vs FRAMELOG +0.04..+0.29%; FRAMELOG.LOG clean. Table + fixtures:
+serial-bench docs/CARDS.md, tests/fixtures/86box-<card>/ (b579b25).
+Found: Duke ScreenMode 1 on VBE 1.2 = banked copy (INT 10h 4F05h window A 0-4 per frame, 4F0Ah unsupported, no 4F07h)
+-> no frames. Fix: vesastub.asm counts 4F05h BX=0 switches (/STATUS hint) and with /BANK calls the flip callback when the
+bank goes lower (lastb starts FFFFh: frames = game frames); stub 151 bytes -> VBEPM_SEG 8 -> 11 (+ _Static_assert);
+FLIP K = banked test mode. Trio64 5620 / ViRGE 5955 / ET4000 5623 / Cirrus 3393 frames, 0 lost; Mach64 + V3 PM path
+re-checked with the new exe. Mystique Duke SM1 stops at the title in 86Box even without FRAMELOG (emulator).
+Cost (FLIP spare loops x3, V3): FLIP +0.0006%, FLIP B -0.0001% vs test11 exe; /BANK on FLIP K -0.09%.
+test12 = test11 zip + FRAMELOG.EXE/FLIP.EXE/FRAMELOG.TXT (WIN98/HOST byte-identical). counter.gif still 9.
+Rigs (priavte testrig/framelog): cards86.sh CARD CASE, cardsall.sh, cardsum.py, w98cards.sh CARD install|test, w98sum.py.
+Next 3: (1) D810 + P5PE-VM card results (steps below); (2) real Voodoo 1/2 run; (3) ring flush (test11 section).
+HW steps: DOS: HDPMI32I -r -x; FRAMELOG; /STATUS; FLIP 20 70; FLIP 20 70 10 B; Duke SM0 + SM1 640x480; reboot + /3DA +
+FLIP 20 35 10 V; if /STATUS shows bank switches with no Duke frames: reboot + /BANK + Duke SM1 + FLIP 20 70 10 K. Win98:
+FRAMELOG /LOG, DDTEST 600 30, D3DTEST hal 300 30, GLTEST 300 30, Q2 soft timedemo. Send /STATUS txts, CSVs, FRAMELOG.LOG.
+
 ## 2026-11-23 test11: serial link diagnostics (host only) + serial-bench Redguard/TR/Toshinden rows
 
 Done: user's real link (Tripp Lite USB-serial = COM1 on the main PC) gave frames=0 junk=0 (DBGLOG nothing too) = no
