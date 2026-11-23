@@ -24,6 +24,10 @@ OPTIONS
   FRAMELOG /AUTO            start logging at once (no host S byte needed)
   FRAMELOG /3DA[:ms]        frames = retrace waits, for games that copy
                             to the screen (see WHICH GAMES; costs CPU)
+  FRAMELOG /BANK            banked VESA games (VBE 1.2 cards, no linear
+                            frame buffer): a frame = the game's bank
+                            switch wrapping back to the top of the
+                            screen (see VIDEO CARDS below)
   FRAMELOG /NOVESA          do not watch VESA page flips (INT 10h is
                             then left alone; see VESA below)
   FRAMELOG /NOMETA          send no run info (see RUN INFO below)
@@ -31,8 +35,9 @@ OPTIONS
                             then left alone; see DOS GLIDE below)
   FRAMELOG /STATUS          counters of the loaded copy (flips, frames,
                             lost, bytes sent, host bytes, starts, traps,
-                            VESA display-start calls, run info blocks
-                            sent, mode sets seen)
+                            VESA display-start calls, bank switches
+                            (hints /BANK), run info blocks sent, mode
+                            sets seen)
 
 CABLE
   Use a NULL-MODEM serial cable (crossed TX/RX) between the game PC's COM
@@ -133,7 +138,10 @@ WHICH GAMES LOG (tested in 86Box, Pentium II 450)
   /3DA: a frame = a vertical retrace the game waits for (port 3DAh).
   - Duke Nukem 3D 1.3D, ScreenMode = 0: works (default mode).
   - Rise of the Triad 1.3: works (default mode).
-  - Duke ScreenMode = 1 (VESA), 640x480: works (VBE 2.0 PM interface).
+  - Duke ScreenMode = 1 (VESA), 640x480: works on VBE 2.0 cards (PM
+    interface: Voodoo3, ATI Mach64); on VBE 1.2 cards (S3 Trio64 and
+    ViRGE, Cirrus, Tseng) Duke copies each frame in banks and never
+    flips: load FRAMELOG with /BANK (test12).
   - Duke ScreenMode = 2 and Heretic 1.2: copy to the screen without
     waiting for the retrace each frame: no frames in either mode.
     (Only a capture card or a later memory-watch mode can see them.)
@@ -146,6 +154,21 @@ WHICH GAMES LOG (tested in 86Box, Pentium II 450)
     frames, 0 lost, race 41-52 fps.
   If fllog.py never prints "header", the game did not flip a page (or,
   with /3DA, wait for a retrace) yet.
+
+VIDEO CARDS (86Box, Pentium II 450, test12)
+  Every card below: FLIP 20 70 and FLIP 20 70 10 B (VESA) frames =
+  flips, 0 lost, 70.00 fps; Duke ScreenMode 0 (mode X) 0 lost; the
+  CSV's gpu/driver lines name the card (its VBE OEM strings):
+    Cirrus GD5446 (VBE 1.2), S3 Trio64 (1.2), S3 ViRGE/DX (1.2),
+    Tseng ET4000/W32p (1.2), Matrox Mystique (2.0), ATI Mach64VT2
+    (2.0), 3dfx Voodoo3 3000 (3.0).
+  Duke ScreenMode 1 640x480: VBE 2.0/3.0 cards flip (0 lost); VBE 1.2
+  cards need /BANK; Matrox Mystique: Duke stops at its title screen in
+  86Box with or without FRAMELOG (emulator, not FRAMELOG).
+  /3DA with Duke ScreenMode 2: Duke waits for the retrace only during
+  fades (19-576 frames per minute), so it is no frame counter there.
+  No nVidia Riva/TNT, ATI Rage or Tseng ET6000 in 86Box: real cards
+  only (FRAMELOG reads any card's VBE strings the same way).
 
 MEASURED COST
   About 0.35% of the game's CPU at 70 fps on a Pentium II 450.

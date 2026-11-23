@@ -1,10 +1,13 @@
 /* FRAMELOG.EXE - DOS frame-time logger TSR (DJGPP, resident under HDPMI32i, coexists with NUKED SB-EMU).
  *
- *   FRAMELOG [/COM:n|hex[,baud]] [/AUTO] [/3DA[:ms]] [/NOVESA] [/NOMETA] [/NOGLIDE]   load (default COM1, 115200); /AUTO = log from now, no host byte
+ *   FRAMELOG [/COM:n|hex[,baud]] [/AUTO] [/3DA[:ms]] [/BANK] [/NOVESA] [/NOMETA] [/NOGLIDE]   load (default COM1, 115200); /AUTO = log from now, no host byte
  *       needed; /3DA = frames are the vertical retraces the game waits for (input status 3DAh polled), for games
  *       that copy to the screen instead of flipping pages. Opt-in: every 3DAh read is trapped (costly in vsync loops).
  *       VESA: INT 10h 4F07h (set display start, BL 00h/80h/02h/82h) = a page flip too (real-mode INT 10h vector,
  *       which DOS extenders reflect protected-mode INT 10h to); /NOVESA leaves INT 10h alone.
+ *       /BANK: banked VESA games (VBE 1.x, no LFB: Duke 3D ScreenMode 1 on S3/Cirrus/Tseng) never flip; a window-A bank
+ *       switch (INT 10h 4F05h BX=0) to a lower bank than the last = the frame copy wrapped = a frame. Without /BANK the
+ *       stub only counts bank switches (/STATUS hint).
  *       Metadata: after the H header an 'M' block (gpu, driver, cpu from VBE 4F00h + CPUID at load; res/depth/mode of
  *       the current mode), and a fresh block when the game sets a mode (INT 10h AH=00h / 4F02h); /NOMETA = none.
  *       Glide: GLIDE2X.OVL's grBufferSwap = a frame (INT 21h stub patches it while the game loads the OVL,
@@ -227,8 +230,9 @@ static uint32_t crtc_trap(uint32_t port, uint32_t val, uint32_t out)
  *  - AH=00h / AX=4F02h (set mode): the BIOS runs, then mode_cb notes the new mode (metadata; /NOMETA = cb3 0, skipped).
  * Same burst merge as the CRTC trap (last_sa): a VBE BIOS that writes CRTC 0Ch/0Dh while we also trap them = one flip. */
 #include "vesastub.h"
-#define VBEPM_SEG  8                 /* table copy at seg+8:0 (stub at seg+1:0, <= 112 bytes) */
+#define VBEPM_SEG  11                /* table copy at seg+11:0 (stub at seg+1:0, <= 160 bytes) */
 #define VBEPM_MAX  1024              /* longest BIOS table we copy (+ 19-byte thunk) */
+_Static_assert(sizeof vesastub_bin <= (VBEPM_SEG - 1) * 16, "INT 10h stub runs into the VBE PM table copy");
 static const uint8_t vbepm_thunk[19] = { 0x50, 0x52, 0xB8,0x00,0x00,0x4C,0x46, 0x66,0xBA,0xD4,0x03, 0xEC, 0x5A, 0x58, 0xE9 };
 static DPMI_REG vesa_reg, vbepm_reg, mode_reg;
 static uint16_t blkseg;
@@ -245,6 +249,7 @@ static void vesa_flip(void)
 }
 static void vesa_cb(void)
 {
+    if (vesa_reg.w.ax == 0x4F05) { St.bank_frames++; St.vesa_calls--; }   /* /BANK: bank wrap, counted apart */
 #ifdef VESADBG
     { char b[64]; sprintf(b, "V AX=%04X BX=%04X CX=%04X DX=%04X\r\n", vesa_reg.w.ax, vesa_reg.w.bx, vesa_reg.w.cx, vesa_reg.w.dx); dbg_out(b); }
 #endif
@@ -404,9 +409,11 @@ static int find_resident(FLSTATE *out)
 
 static void usage(void)
 {
-    puts("FRAMELOG [/COM:n|hex[,baud]] [/AUTO] [/3DA] [/NOVESA] [/NOMETA] [/NOGLIDE] - load the frame-time logger (default COM1,115200)\n"
+    puts("FRAMELOG [/COM:n|hex[,baud]] [/AUTO] [/3DA] [/BANK] [/NOVESA] [/NOMETA] [/NOGLIDE] - load the frame-time logger (default COM1,115200)\n"
          "  /3DA[:ms]: frames = vertical retraces the game waits for (copy-to-screen games), costs CPU;\n"
          "     ms = how long the game must be away from the retrace port for a new frame (default 6)\n"
+         "  /BANK: banked VESA games (VBE 1.x, no linear frame buffer) that copy each frame in 64 KB banks:\n"
+         "     frame = the game's bank switch (INT 10h 4F05h) wrapping back to a lower bank\n"
          "  /NOVESA: don't hook INT 10h (VESA 4F07h display-start calls are page flips by default)\n"
          "  /NOMETA: send no metadata (gpu, driver, cpu, resolution: 'M' records after the header)\n"
          "  /NOGLIDE: don't hook INT 21h (DOS Glide: GLIDE2X.OVL's grBufferSwap = a frame by default)\n"
@@ -416,12 +423,13 @@ static void usage(void)
 
 int main(int argc, char **argv)
 {
-    const char *com = "COM1"; int autostart = 0, status = 0, novesa = 0, noglide = 0;
+    const char *com = "COM1"; int autostart = 0, status = 0, novesa = 0, noglide = 0, bank = 0;
     for (int i = 1; i < argc; i++) {
         if (!strncasecmp(argv[i], "/COM:", 5)) com = argv[i] + 5;
         else if (!strcasecmp(argv[i], "/AUTO")) autostart = 1;
         else if (!strcasecmp(argv[i], "/STATUS")) status = 1;
         else if (!strcasecmp(argv[i], "/NOVESA")) novesa = 1;
+        else if (!strcasecmp(argv[i], "/BANK")) bank = 1;
         else if (!strcasecmp(argv[i], "/NOMETA")) nometa = 1;
         else if (!strcasecmp(argv[i], "/NOGLIDE")) noglide = 1;
         else if (!strncasecmp(argv[i], "/3DA", 4) && (argv[i][4] == 0 || argv[i][4] == ':')) {
@@ -441,6 +449,12 @@ int main(int argc, char **argv)
         if (r.mode3da) printf("  3DAh reads trapped %lu\n", (unsigned long)r.traps3da);
         printf("  VESA hook %s: display-start calls %lu (INT 10h 4F07h + VBE 2.0 PM interface), PM interface requests %lu (%lu not patched)\n",
                r.vesa ? "on" : "off (/NOVESA)", (unsigned long)r.vesa_calls, (unsigned long)r.vbepm, (unsigned long)r.vbepm_skip);
+        if (r.vesa) {
+            uint16_t sg = _farpeekw(_dos_ds, 0x4F0);
+            unsigned long nb = _farpeekl(_dos_ds, ((uint32_t)sg + 1) * 16 + VESASTUB_NBANK);
+            if (r.bank) printf("  banked VESA (/BANK): frames %lu (bank wraps), window bank switches %lu\n", (unsigned long)r.bank_frames, nb);
+            else if (nb) printf("  window bank switches %lu (INT 10h 4F05h): a banked VESA game? Load with /BANK to count its frames\n", nb);
+        }
         if (r.meta) printf("  metadata on: blocks sent %lu, mode sets seen %lu (INT 10h AH=00h / 4F02h)\n", (unsigned long)r.metas, (unsigned long)r.modesets);
         else puts("  metadata off (/NOMETA)");
         if (r.glide) printf("  Glide hook on: GLIDE2X.OVL opens %lu, patched loads %lu, grBufferSwap calls %lu, last result %lu%s, DLL start fixes %lu\n",
@@ -488,12 +502,13 @@ int main(int argc, char **argv)
         uint8_t code[sizeof vesastub_bin];
         memcpy(code, vesastub_bin, sizeof code);
         uint32_t old = _farpeekl(_dos_ds, 0x10 * 4);
+        code[VESASTUB_BANKON] = (uint8_t)bank;
         memcpy(code + VESASTUB_CB, &cb, 4); memcpy(code + VESASTUB_OLD, &old, 4); memcpy(code + VESASTUB_CB2, &cb2, 4); memcpy(code + VESASTUB_CB3, &cb3, 4);
         movedata(_my_ds(), (unsigned)code, _dos_ds, blk + 16, sizeof code);
         asm volatile("cli");
         _farpokel(_dos_ds, 0x10 * 4, (uint32_t)(seg + 1) << 16);
         asm volatile("sti");
-        St.vesa = 1;
+        St.vesa = 1; St.bank = bank;
     }
     if (!noglide && gl_install()) { puts("FRAMELOG: Glide hook failed (try /NOGLIDE)"); return 4; }
     if (autostart) start_log(rdtsc());
@@ -501,7 +516,7 @@ int main(int argc, char **argv)
     _farpokew(_dos_ds, 0x4F0, seg); _farpokew(_dos_ds, 0x4F2, FL_SIG);
     printf("FRAMELOG %s loaded: UART %X %lu baud%s, CPU %lu MHz, %s (protected-mode games)%s%s%s%s\n",
            FL_VER, base, (unsigned long)U.baud, U.fifo == 16 ? "" : " (no FIFO)", (unsigned long)(St.tsc_hz / 1000000),
-           mode3da ? "frames = vsync waits (3DAh trapped, /3DA)" : "frames = page flips (CRTC 3D4h-3D5h)", St.vesa ? ", VESA 4F07h" : "", St.glide ? ", Glide" : "", nometa ? ", no metadata" : "", autostart ? ", logging now" : "");
+           mode3da ? "frames = vsync waits (3DAh trapped, /3DA)" : "frames = page flips (CRTC 3D4h-3D5h)", St.vesa ? (St.bank ? ", VESA 4F07h + bank wraps" : ", VESA 4F07h") : "", St.glide ? ", Glide" : "", nometa ? ", no metadata" : "", autostart ? ", logging now" : "");
     if (!nometa) { fputs(meta_pre, stdout); printf("  VBE modes known: %d, current mode: %s\n", vtabn, vmode >= 0 ? "VESA" : "VGA"); }
     fflush(stdout);
     DPMI_TSR();

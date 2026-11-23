@@ -19,5 +19,6 @@ typedef struct {
     uint32_t meta; volatile uint32_t metas, modesets;   /* /NOMETA clears meta; M blocks sent; INT 10h mode sets seen */
     uint32_t glide; volatile uint32_t glide_opens, glide_patched, glide_swaps, glide_err, glide_dllfix,
              glide_stscan, glide_static, glide_sterr, glide_stus;   /* DOS Glide hook (glide/glhook.c, glstatic.c) */
+    uint32_t bank; volatile uint32_t bank_frames;   /* /BANK: frames = window-A bank wraps (INT 10h 4F05h, vesastub.asm) */
 } FLSTATE;
 #endif

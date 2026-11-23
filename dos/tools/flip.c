@@ -4,7 +4,8 @@
  *   game's music (keeps the SC-55 busy for overhead measurements). V = copy-to-screen game: no page flips, each
  *   frame "renders" for half a frame time (RDTSC spin) and then waits for round(70/FPS) vertical retraces on 3DAh
  *   (text mode = 70 Hz) like a vsync'd game; LONG frames wait twice as many. B = VESA game: VBE mode 101h (640x480x8)
- *   and flips with INT 10h AX=4F07h (BL 00h / 80h alternating) between lines 0 and 480 (needs a VBE BIOS).
+ *   and flips with INT 10h AX=4F07h (BL 00h / 80h alternating) between lines 0 and 480 (needs a VBE BIOS). K = banked
+ *   VESA game: mode 101h, no flips, each frame "copied" as 5 window-A banks (INT 10h 4F05h, 64 KB stores each; FRAMELOG /BANK).
  * Prints the frame count and the TSC rate it measured. GPL-2.0-or-later. */
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,8 +20,9 @@ static inline uint64_t rdtsc(void) { uint32_t lo, hi; asm volatile("rdtsc" : "=a
 int main(int argc, char **argv)
 {
     if (argc < 3) { puts("FLIP SECONDS FPS [LONG]"); return 1; }
-    double secs = atof(argv[1]), fps = atof(argv[2]); int lng = argc > 3 ? atoi(argv[3]) : 10, midi = argc > 4 && strpbrk(argv[4], "Mm"), vs = argc > 4 && strpbrk(argv[4], "Vv"), vb = argc > 4 && strpbrk(argv[4], "Bb");
+    double secs = atof(argv[1]), fps = atof(argv[2]); int lng = argc > 3 ? atoi(argv[3]) : 10, midi = argc > 4 && strpbrk(argv[4], "Mm"), vs = argc > 4 && strpbrk(argv[4], "Vv"), vb = argc > 4 && strpbrk(argv[4], "Bb"), vk = argc > 4 && strpbrk(argv[4], "Kk");
     __dpmi_regs r;
+    if (vk) vb = 2;
     if (vb) { memset(&r, 0, sizeof r); r.x.ax = 0x4F02; r.x.bx = 0x101; __dpmi_int(0x10, &r);
               if (r.x.ax != 0x004F) { printf("FLIP: VBE mode 101h failed (AX=%04X)\n", r.x.ax); return 2; } }
     int rpf = (int)(70.0 / fps + 0.5); if (rpf < 1) rpf = 1;
@@ -39,6 +41,12 @@ int main(int argc, char **argv)
             uint64_t w = rdtsc() + (uint64_t)(hz / fps / 2);   /* "render": half a frame away from 3DAh */
             while (rdtsc() < w) spins++;
             next = rdtsc();
+        } else if (vb == 2) {
+            while (rdtsc() < next) spins++;
+            for (int k = 0; k < 5; k++) {
+                memset(&r, 0, sizeof r); r.x.ax = 0x4F05; r.x.dx = k; __dpmi_int(0x10, &r);
+                for (int o = 0; o < 65536; o += 4096) _farpokel(_dos_ds, 0xA0000 + o, n * 0x01010101u);
+            }
         } else if (vb) {
             while (rdtsc() < next) spins++;
             memset(&r, 0, sizeof r); r.x.ax = 0x4F07; r.x.bx = (n & 2) ? 0x80 : 0x00; r.x.cx = 0; r.x.dx = (n & 1) ? 0 : 480;
